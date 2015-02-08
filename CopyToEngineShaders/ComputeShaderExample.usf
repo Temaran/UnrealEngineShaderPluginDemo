@@ -1,0 +1,83 @@
+#include "Common.usf"
+
+// Base shader origin:
+// https://www.shadertoy.com/view/MdXSzS
+// The Big Bang - just a small explosion somewhere in a massive Galaxy of Universes.
+// Outside of this there's a massive galaxy of 'Galaxy of Universes'... etc etc. :D
+//
+// HLSL translation and parameterization by Temaran
+
+/**
+Uniform Buffers
+
+//This buffer should contain variables that never, or rarely change
+BEGIN_UNIFORM_BUFFER_STRUCT(FComputeShaderConstantParameters, )
+DECLARE_UNIFORM_BUFFER_STRUCT_MEMBER(float, SimulationSpeed)
+END_UNIFORM_BUFFER_STRUCT(FComputeShaderConstantParameters)
+
+//This buffer is for variables that change very often (each frame for example)
+BEGIN_UNIFORM_BUFFER_STRUCT(FComputeShaderVariableParameters, )
+DECLARE_UNIFORM_BUFFER_STRUCT_MEMBER(float, TotalTimeElapsedSeconds)
+END_UNIFORM_BUFFER_STRUCT(FComputeShaderVariableParameters)
+*/
+
+RWTexture2D<uint> OutputSurface;
+
+[numthreads(32, 32, 1)]
+void MainComputeShader(uint3 ThreadId : SV_DispatchThreadID)
+{
+	//Set up some variables we are going to need
+	float sizeX, sizeY;
+	OutputSurface.GetDimensions(sizeX, sizeY);
+
+	float2 iResolution = float2(sizeX, sizeY);
+	float2 uv = (ThreadId.xy / iResolution.xy) - 0.5;
+	float iGlobalTime = CSConstants.SimulationSpeed * CSVariables.TotalTimeElapsedSeconds;
+
+	//This shader code is from www.shadertoy.com, converted to HLSL by me. If you have not checked out shadertoy yet, you REALLY should!!
+	float t = iGlobalTime * 0.1 + ((0.25 + 0.05 * sin(iGlobalTime * 0.1)) / (length(uv.xy) + 0.07)) * 2.2;
+	float si = sin(t);
+	float co = cos(t);
+	float2x2 ma = { co, si, -si, co };
+
+	float v1, v2, v3;
+	v1 = v2 = v3 = 0.0;
+
+	float s = 0.0;
+	for (int i = 0; i < 90; i++)
+	{
+		float3 p = s * float3(uv, 0.0);
+		p.xy = mul(p.xy, ma);
+		p += float3(0.22, 0.3, s - 1.5 - sin(iGlobalTime * 0.13) * 0.1);
+		
+		for (int i = 0; i < 8; i++)	
+			p = abs(p) / dot(p, p) - 0.659;
+
+		v1 += dot(p, p) * 0.0015 * (1.8 + sin(length(uv.xy * 13.0) + 0.5 - iGlobalTime * 0.2));
+		v2 += dot(p, p) * 0.0013 * (1.5 + sin(length(uv.xy * 14.5) + 1.2 - iGlobalTime * 0.3));
+		v3 += length(p.xy * 10.0) * 0.0003;
+		s += 0.035;
+	}
+
+	float len = length(uv);
+	v1 *= lerp(0.7, 0.0, len);
+	v2 *= lerp(0.5, 0.0, len);
+	v3 *= lerp(0.9, 0.0, len);
+
+	float3 col = float3(v3 * (1.5 + sin(iGlobalTime * 0.2) * 0.4), (v1 + v3) * 0.3, v2)
+					+ lerp(0.2, 0.0, len) * 0.85
+					+ lerp(0.0, 0.6, v3) * 0.3;
+
+	float3 powered = pow(abs(col), float3(1.2, 1.2, 1.2));
+	float3 minimized = min(powered, 1.0);
+	float4 outputColor = float4(minimized, 1.0);
+
+	//Since there are limitations on operations that can be done on certain formats when using compute shaders
+	//I elected to go with the most flexible one (UINT 32bit) and do my packing manually to simulate an R8G8B8A8_UINT format.
+	//There might be better ways to do this :)
+	uint r = outputColor.r * 255.0;
+	uint g = ((uint)(outputColor.g * 255.0)) << 8;
+	uint b = ((uint)(outputColor.b * 255.0)) << 16;
+	uint a = ((uint)(outputColor.a * 255.0)) << 24;
+	OutputSurface[ThreadId.xy] = r | g | b | a;
+}

@@ -1,0 +1,13 @@
+{
+	"FileVersion": 3,
+	"EngineAssociation": "{579293B0-498A-15E6-889A-5A91ABD73865}",
+	"Category": "",
+	"Description": "",
+	"Modules": [
+		{
+			"Name": "ShaderPluginDemo",
+			"Type": "Runtime",
+			"LoadingPhase": "Default"
+		}
+	]
+}

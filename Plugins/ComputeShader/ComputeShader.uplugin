@@ -1,0 +1,21 @@
+{
+    "PluginFileVersion" : 3,
+	
+	"FriendlyName" : "Compute Shader",
+	"Version" : 1,
+	"VersionName" : "1.0",
+	"CreatedBy" : "Temaran",
+	"CreatedByURL" : "temaran@gmail.com",
+	"EngineVersion" : "4.7.0",
+	"Description" : "An example stand alone compute shader that can be run from a plugin",
+	"Category" : "Programming Rendering.Plugins",
+	
+    "Modules" :
+	[
+		{
+			"Name" : "ComputeShader",
+			"Type" : "Runtime",
+			"LoadingPhase" : "PostConfigInit"
+		}
+	]
+}
