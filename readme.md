@@ -1,6 +1,6 @@
 Hello!
 
-This project is a tutorial project for how to create shaders in UE4. Most material effects can be created in-editor using the excellent tools that Epic has provided us with.
+This project is a tutorial project for how to create shaders in UE4 (4.7). Most material effects can be created in-editor using the excellent tools that Epic has provided us with.
 There are some times though, where you simply want to use a pixel or compute shader to do some work but you don't want this work to end up in a material surface or post process material, but simply have access to
 it in a render target, a Cpp texture obect or a struct. This is where basic HLSL shaders really shine. 
 And while it is possible to use normal HLSL shaders in UE4, there doesn't seem to be any tutorials for it yet, and there are some complications that make it necessary to take a few detours before you can actually
