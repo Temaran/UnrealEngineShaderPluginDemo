@@ -2,7 +2,6 @@
 #include "ShaderPluginDemoCharacter.h"
 #include "Animation/AnimInstance.h"
 #include "GameFramework/InputSettings.h"
-#include "SVirtualJoystick.h"
 #include "Engine.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogFPChar, Warning, All);
