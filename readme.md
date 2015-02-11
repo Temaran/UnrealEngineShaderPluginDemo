@@ -36,11 +36,9 @@ After you have run your shader it is of course time to harvest your output. Ther
 compute shader output.
 
 
-How to install this plugin:
-There are two important steps. The first one is copying the Plugins/ folder in this repository to your project folder.
-The second one is copying the contents of the "CopyToEngineShaders" folder in this repository to your Engine/Shaders/ folder. 
-You can find out which Engine/Shaders folder you need to place them in by checking which engine distribution your project is bound to. To do this, right click your *.uproject file and select "Switch Unreal Engine Version"
-You should then be able to see which engine you need to add the files to.
+How to run this project:
+To get the project to run, you first need to bind it to an engine, you do this like any other project by right clicking the uproject file and switching version if needed, and then doing Generate Project.
+You then need to open up the solution file and build the source code.
 
 How to use this plugin:
 I would recommend checking out the example project supplied in this repository to understand how to best use the plugin code. All the relevant files in the repository are:
