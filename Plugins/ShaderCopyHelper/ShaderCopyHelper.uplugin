@@ -1,0 +1,21 @@
+{
+    "FileVersion" : 1,
+	
+	"FriendlyName" : "Shader Copy Helper",
+	"Version" : 1,
+	"VersionName" : "0.0.1",
+	"CreatedBy" : "Temaran",
+	"CreatedByURL" : "https://github.com/Temaran",
+	"EngineVersion" : "4.7.0",
+	"Description" : "This plugin will copy all files present in your Project/Shaders folder to your Engine/Shaders folder",
+	"Category" : "Rendering",
+	
+    "Modules" :
+	[
+		{
+			"Name" : "ShaderCopyHelper",
+			"Type" : "Developer",
+			"LoadingPhase" : "PostConfigInit"
+		}
+	]
+}
