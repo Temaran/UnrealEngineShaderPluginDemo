@@ -40,15 +40,15 @@ How to run this project:
 To get the project to run, you first need to bind it to an engine, you do this like any other project by right clicking the uproject file and switching version if needed, and then doing Generate Project.
 You then need to open up the solution file and build the source code.
 
-How to use this plugin:
-I would recommend checking out the example project supplied in this repository to understand how to best use the plugin code. All the relevant files in the repository are:
+How to use this project:
+I would recommend checking out the example project supplied in this repository to understand how to best use the project code. All the relevant files in the repository are:
 * Everything under the Plugins/ folder                     (For declaring the shaders)
 * Everything under the CopyToEngineShaders/ folder         (For copying into the Engine/Shaders/ folder, these are the actual HLSL shaders)
 * Source/ShaderPluginDemo/ShaderPluginDemoCharacter.cpp/.h (These are changes and additions to the main character class in the demo project to allow for the shader's use. I have removed all non-related comments in these files to make it easy to see where I have made changes)
 * Everything under the Content/ShaderPluginDemo/ folder    (These are the editor objects that I use to set up the shader use in the scene)
 * The project settings file                                (I have created some new input bindings)
 
-Plugin controls:
+Project controls:
 W/A/S/D - Movement
 Space - Jump
 Move mouse - Look around
