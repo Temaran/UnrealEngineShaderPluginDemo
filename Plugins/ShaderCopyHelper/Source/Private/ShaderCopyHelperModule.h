@@ -25,9 +25,7 @@
 #pragma once
 
 #include "ModuleManager.h"
-
-DECLARE_LOG_CATEGORY_EXTERN(ShaderCopyHelper, Log, All);
-DEFINE_LOG_CATEGORY(ShaderCopyHelper);
+#include "ShaderFileVisitor.h"
 
 class FShaderCopyHelperModule : public IModuleInterface
 {

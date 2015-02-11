@@ -35,6 +35,8 @@ bool FShaderFileVisitor::Visit(const TCHAR* FilenameOrDirectory, bool bIsDirecto
 	{
 		ShaderFilePaths.Add(FString(FilenameOrDirectory));
 	}
+
+	return true;
 }
 
 void FShaderFileVisitor::Reset()

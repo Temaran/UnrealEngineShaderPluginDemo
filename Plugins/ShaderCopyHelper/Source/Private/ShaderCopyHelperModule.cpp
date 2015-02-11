@@ -23,12 +23,11 @@
 ******************************************************************************/
 
 #include "ShaderCopyHelperPrivatePCH.h" 
-#include "ShaderCopyHelperModule.h"
 #include "Developer/DesktopPlatform/public/DesktopPlatformModule.h"
 #include "GenericPlatformFile.h"
 #include "PlatformFilemanager.h"
 
-#define LOCTEXT_NAMESPACE "ShaderCopyHelperNamespace" 
+DEFINE_LOG_CATEGORY_STATIC(ShaderCopyHelper, Log, All);
 
 void FShaderCopyHelperModule::StartupModule()
 {
@@ -51,5 +50,3 @@ void FShaderCopyHelperModule::ShutdownModule()
 }
 
 IMPLEMENT_MODULE(FShaderCopyHelperModule, ShaderCopyHelper)
-
-#undef LOCTEXT_NAMESPACE 
