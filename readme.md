@@ -65,3 +65,27 @@ I hope someone finds this useful :)
 
 Best regards,
 Temaran
+
+
+Troubleshooting:
+
+Some people have had problems with the shadercopyhelper and are getting shader related errors such as:
+Assertion failed: ShaderRef != NULL && *ShaderRef != NULL [File:Runtime/ShaderCore/Public/Shader.h] [Line: 926]
+Failed to find shader type FComputeShaderDeclaration
+
+Basically, the plugin defines its shaders in *.usf files. These *.usf files can only be read by the engine if they reside in the Engine/Shaders folder.
+
+This is of course a problem, since you cannot define these on the project level, and if you want to leverage the system, you have to change your engine setup.
+
+The way I tried to solve this problem with the plugin was to create a different plugin that basically just copies the shader files to the correct location early in the editor launch process.
+
+This seems to work for most people, but sometimes, it fails for some setups it seems.
+
+
+
+I can think of a few things you can try to fix this:
+*I've only tested this tutorial with 4.7, so if you happen to run a different engine version, it might not work because of that.
+
+*Ensure that the Project/Shaders folder actually contains the *.usf files and those have not been corrupted or deleted or something silly like that.
+
+*If the files are there, you can try to remove the ShaderCopyHelper plugin (under plugins) and manually copy the usf files to your Engine/Shaders folder.
