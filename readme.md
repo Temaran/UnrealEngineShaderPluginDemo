@@ -67,6 +67,11 @@ Best regards,
 Temaran
 
 
+
+
+
+
+
 Troubleshooting:
 
 Some people have had problems with the shadercopyhelper and are getting shader related errors such as:
