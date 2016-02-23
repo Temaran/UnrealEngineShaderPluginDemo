@@ -1,4 +1,4 @@
-// Copyright 1998-2015 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
 
 #include "ShaderPluginDemo.h"
 #include "ShaderPluginDemoHUD.h"
@@ -6,10 +6,10 @@
 #include "TextureResource.h"
 #include "CanvasItem.h"
 
-AShaderPluginDemoHUD::AShaderPluginDemoHUD(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
+AShaderPluginDemoHUD::AShaderPluginDemoHUD()
 {
 	// Set the crosshair texture
-	static ConstructorHelpers::FObjectFinder<UTexture2D> CrosshiarTexObj(TEXT("/Game/Textures/Crosshair"));
+	static ConstructorHelpers::FObjectFinder<UTexture2D> CrosshiarTexObj(TEXT("/Game/FirstPerson/Textures/FirstPersonCrosshair"));
 	CrosshairTex = CrosshiarTexObj.Object;
 }
 

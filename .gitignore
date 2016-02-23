@@ -10,6 +10,7 @@ Saved/
 # Visual Studio generated #
 # ======================= #
 *.opensdf
+*.opendb
 *.sdf
 *.sln
 *.suo
