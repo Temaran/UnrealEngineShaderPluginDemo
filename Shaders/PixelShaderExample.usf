@@ -24,8 +24,8 @@
 
 #include "Common.usf"
 
-/**
-Uniform Buffers
+
+/*Uniform Buffers
 
 //This buffer should contain variables that never, or very seldomly change
 BEGIN_UNIFORM_BUFFER_STRUCT(FPixelShaderConstantParameters, )
@@ -73,6 +73,6 @@ void MainPixelShader(
 	
 	//Here we will just blend using the TextureParameterBlendFactor between our simple color change shader and the input from the compute shader
 	float alpha = length(uv) / length(float2(1, 1));
-	OutColor = lerp(PSConstants.StartColor, PSVariables.EndColor, alpha) * (1.0 - PSVariables.TextureParameterBlendFactor) 
-			   + float4(r, g, b, a) / 255.0 * PSVariables.TextureParameterBlendFactor;
+	OutColor = lerp(PSConstant.StartColor, PSVariable.EndColor, alpha) * (1.0 - PSVariable.TextureParameterBlendFactor) 
+			   + float4(r, g, b, a) / 255.0 * PSVariable.TextureParameterBlendFactor;
 }
