@@ -23,7 +23,8 @@
 ******************************************************************************/
 
 #include "PixelShaderPrivatePCH.h"
-#include "RHIStaticStates.h"
+#include "Public/RHIStaticStates.h"
+#include "Public/PipelineStateCache.h"
 
 //It seems to be the convention to expose all vertex declarations as globals, and then reference them as externs in the headers where they are needed.
 //It kind of makes sense since they do not contain any parameters that change and are purely used as their names suggest, as declarations :)
@@ -116,18 +117,32 @@ void FPixelShaderUsageExample::ExecutePixelShaderInternal()
 		TextureParameterSRV = RHICreateShaderResourceView(TextureParameter, 0);
 	}
 
-	//This is where the magic happens
-	CurrentTexture = CurrentRenderTarget->GetRenderTargetResource()->GetRenderTargetTexture();
-	SetRenderTarget(RHICmdList, CurrentTexture, FTextureRHIRef());
-	RHICmdList.SetBlendState(TStaticBlendState<>::GetRHI());
-	RHICmdList.SetRasterizerState(TStaticRasterizerState<>::GetRHI());
-	RHICmdList.SetDepthStencilState(TStaticDepthStencilState<false, CF_Always>::GetRHI());
-	
-	static FGlobalBoundShaderState BoundShaderState;
+	// This is where the magic happens
 	TShaderMapRef<FVertexShaderExample> VertexShader(GetGlobalShaderMap(FeatureLevel));
 	TShaderMapRef<FPixelShaderDeclaration> PixelShader(GetGlobalShaderMap(FeatureLevel));
 
-	SetGlobalBoundShaderState(RHICmdList, FeatureLevel, BoundShaderState, GTextureVertexDeclaration.VertexDeclarationRHI, *VertexShader, *PixelShader);
+	CurrentTexture = CurrentRenderTarget->GetRenderTargetResource()->GetRenderTargetTexture();
+	SetRenderTarget(RHICmdList, CurrentTexture, FTextureRHIRef());
+	//RHICmdList.SetBlendState(TStaticBlendState<>::GetRHI());
+	//RHICmdList.SetRasterizerState(TStaticRasterizerState<>::GetRHI());
+	//RHICmdList.SetDepthStencilState(TStaticDepthStencilState<false, CF_Always>::GetRHI());
+	//static FGlobalBoundShaderState BoundShaderState;
+	//SetGlobalBoundShaderState(RHICmdList, FeatureLevel, BoundShaderState, GTextureVertexDeclaration.VertexDeclarationRHI, *VertexShader, *PixelShader);
+
+
+	// Replacing old GlobalBoundShaderState with the new FGraphicsPipelineState (UE 4.17)
+	FGraphicsPipelineStateInitializer GraphicsPSOInit;
+	RHICmdList.ApplyCachedRenderTargets(GraphicsPSOInit);
+	GraphicsPSOInit.BlendState = TStaticBlendState<>::GetRHI();
+	GraphicsPSOInit.RasterizerState = TStaticRasterizerState<>::GetRHI();
+	GraphicsPSOInit.DepthStencilState = TStaticDepthStencilState<false, CF_Always>::GetRHI();
+	GraphicsPSOInit.PrimitiveType = PT_TriangleStrip;
+	GraphicsPSOInit.BoundShaderState.VertexDeclarationRHI = GTextureVertexDeclaration.VertexDeclarationRHI;
+	GraphicsPSOInit.BoundShaderState.VertexShaderRHI = GETSAFERHISHADER_VERTEX(*VertexShader);
+	GraphicsPSOInit.BoundShaderState.PixelShaderRHI = GETSAFERHISHADER_PIXEL(*PixelShader);
+	SetGraphicsPipelineState(RHICmdList, GraphicsPSOInit);
+
+
 
 	PixelShader->SetSurfaces(RHICmdList, TextureParameterSRV);
 	PixelShader->SetUniformBuffers(RHICmdList, ConstantParameters, VariableParameters);
@@ -144,9 +159,9 @@ void FPixelShaderUsageExample::ExecutePixelShaderInternal()
 	Vertices[3].UV = FVector2D(1, 1);
 
 	DrawPrimitiveUP(RHICmdList, PT_TriangleStrip, 2, Vertices, sizeof(Vertices[0]));
-	
+
 	PixelShader->UnbindBuffers(RHICmdList);
-	
+
 	if (bSave) //Save to disk if we have a save request!
 	{
 		bSave = false;

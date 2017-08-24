@@ -2,7 +2,7 @@ namespace UnrealBuildTool.Rules
 {
 	public class ComputeShader : ModuleRules
 	{
-		public ComputeShader(TargetInfo Target)
+		public ComputeShader(ReadOnlyTargetRules Target) : base(Target)
         {
             PrivateIncludePaths.AddRange(
                 new string[] {

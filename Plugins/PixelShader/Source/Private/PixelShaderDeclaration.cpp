@@ -83,9 +83,9 @@ void FPixelShaderDeclaration::UnbindBuffers(FRHICommandList& RHICmdList) {
 
 //This is what will instantiate the shader into the engine from the engine/Shaders folder
 //                      ShaderType               ShaderFileName     Shader function name            Type
-IMPLEMENT_SHADER_TYPE(, FVertexShaderExample, TEXT("PixelShaderExample"),
+IMPLEMENT_SHADER_TYPE(, FVertexShaderExample, TEXT("/Plugin/PixelShader/Private/PixelShaderExample.usf"),
                       TEXT("MainVertexShader"), SF_Vertex);
-IMPLEMENT_SHADER_TYPE(, FPixelShaderDeclaration, TEXT("PixelShaderExample"),
+IMPLEMENT_SHADER_TYPE(, FPixelShaderDeclaration, TEXT("/Plugin/PixelShader/Private/PixelShaderExample.usf"),
                       TEXT("MainPixelShader"), SF_Pixel);
 
 //Needed to make sure the plugin works :)
