@@ -56,6 +56,8 @@ FPixelShaderUsageExample::~FPixelShaderUsageExample()
 
 void FPixelShaderUsageExample::ExecutePixelShader(UTextureRenderTarget2D* RenderTarget, FTexture2DRHIRef InputTexture, FColor EndColor, float TextureParameterBlendFactor)
 {
+	check(IsInGameThread());
+
 	if (bIsUnloading || bIsPixelShaderExecuting) //Skip this execution round if we are already executing
 	{
 		return;
@@ -121,6 +123,14 @@ void FPixelShaderUsageExample::ExecutePixelShaderInternal()
 	TShaderMapRef<FVertexShaderExample> VertexShader(GetGlobalShaderMap(FeatureLevel));
 	TShaderMapRef<FPixelShaderDeclaration> PixelShader(GetGlobalShaderMap(FeatureLevel));
 
+
+
+
+
+
+
+
+
 	CurrentTexture = CurrentRenderTarget->GetRenderTargetResource()->GetRenderTargetTexture();
 	SetRenderTarget(RHICmdList, CurrentTexture, FTextureRHIRef());
 	//RHICmdList.SetBlendState(TStaticBlendState<>::GetRHI());
@@ -161,6 +171,13 @@ void FPixelShaderUsageExample::ExecutePixelShaderInternal()
 	DrawPrimitiveUP(RHICmdList, PT_TriangleStrip, 2, Vertices, sizeof(Vertices[0]));
 
 	PixelShader->UnbindBuffers(RHICmdList);
+
+	// Resolve render target.
+	RHICmdList.CopyToResolveTarget(
+		CurrentRenderTarget->GetRenderTargetResource()->GetRenderTargetTexture(),
+		CurrentRenderTarget->GetRenderTargetResource()->TextureRHI,
+		false, FResolveParams());
+
 
 	if (bSave) //Save to disk if we have a save request!
 	{
