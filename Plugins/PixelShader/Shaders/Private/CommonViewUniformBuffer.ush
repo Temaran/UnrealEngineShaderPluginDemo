@@ -1,0 +1,32 @@
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
+
+/*=============================================================================
+	CommonViewUniformBuffer.usf: Common view uniform buffer specifics
+=============================================================================*/
+
+/*
+* @return tan(View.FieldOfViewWideAngles * .5)
+*/
+float2 GetTanHalfFieldOfView()
+{
+	return float2(View.ClipToView[0][0], View.ClipToView[1][1]);
+}
+
+float2 GetPrevTanHalfFieldOfView()
+{
+	return float2(View.PrevClipToView[0][0], View.PrevClipToView[1][1]);
+}
+
+// might be used by Custom material expressions (still best to wrap the custom node in a material function)
+// @return 1 / tan(View.FieldOfViewWideAngles * .5)
+float2 GetCotanHalfFieldOfView()
+{
+	return float2(View.ViewToClip[0][0], View.ViewToClip[1][1]);
+}
+
+// might be used by Custom material expressions (still best to wrap the custom node in a material function)
+// @return previous 1 / tan(View.FieldOfViewWideAngles * .5)
+float2 GetPrevCotanHalfFieldOfView()
+{
+	return float2(View.PrevViewToClip[0][0], View.PrevViewToClip[1][1]);
+}

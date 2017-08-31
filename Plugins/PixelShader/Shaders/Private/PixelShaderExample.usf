@@ -22,7 +22,9 @@
 * THE SOFTWARE.
 ******************************************************************************/
 
-#include "/Engine/Private/Common.ush"
+//Since we can't #include private Engine shaders such as Common.ush we have to copy the needed Shaders from the Engine' Shader directory.
+//When this gets chaned in the future, we could change this to #include "/Engine/Private/Common.ush".
+#include "Common.ush"
 
 
 /*Uniform Buffers
@@ -32,7 +34,7 @@ BEGIN_UNIFORM_BUFFER_STRUCT(FPixelShaderConstantParameters, )
 DECLARE_UNIFORM_BUFFER_STRUCT_MEMBER(FVector4, StartColor)
 END_UNIFORM_BUFFER_STRUCT(FPixelShaderConstantParameters)
 
-//This buffer is for variables that change very often (each fram for example)
+//This buffer is for variables that change very often (each frame for example)
 BEGIN_UNIFORM_BUFFER_STRUCT(FPixelShaderDynamicParameters, )
 DECLARE_UNIFORM_BUFFER_STRUCT_MEMBER(float, TextureParameterBlendFactor)
 DECLARE_UNIFORM_BUFFER_STRUCT_MEMBER(FVector4, EndColor)
