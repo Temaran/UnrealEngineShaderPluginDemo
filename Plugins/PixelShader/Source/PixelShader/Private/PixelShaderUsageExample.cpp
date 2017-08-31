@@ -59,16 +59,15 @@ void FPixelShaderUsageExample::ExecutePixelShader(UTextureRenderTarget2D* Render
 	check(IsInGameThread());
 
 	if (bIsUnloading || bIsPixelShaderExecuting) //Skip this execution round if we are already executing
-	{
 		return;
-	}
+
+	if (!RenderTarget)
+		return;
 
 	bIsPixelShaderExecuting = true;
 
 	if (TextureParameter != InputTexture)
-	{
 		bMustRegenerateSRV = true;
-	}
 
 	//Now set our runtime parameters!
 	VariableParameters.EndColor = FVector4(EndColor.R / 255.0, EndColor.G / 255.0, EndColor.B / 255.0, EndColor.A / 255.0);
