@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 public class ShaderPluginDemoTarget : TargetRules
 {
-	public ShaderPluginDemoTarget(TargetInfo Target)
+	public ShaderPluginDemoTarget(TargetInfo Target): base(Target)
 	{
 		Type = TargetType.Game;
         ExtraModuleNames.Add("ShaderPluginDemo");
