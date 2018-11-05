@@ -5,7 +5,7 @@
   "VersionName": "1.0",
   "CreatedBy": "Temaran",
   "CreatedByURL": "temaran@gmail.com / www.valentinkraft.de",
-  "EngineVersion": "4.17.0",
+  "EngineVersion": "4.20.0",
   "Description": "An example stand alone compute shader that can be run from a plugin",
   "Category": "Shader",
 
