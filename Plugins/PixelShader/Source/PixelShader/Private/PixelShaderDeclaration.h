@@ -30,13 +30,13 @@
 
 //This buffer should contain variables that never, or rarely change
 BEGIN_UNIFORM_BUFFER_STRUCT(FPixelShaderConstantParameters, )
-DECLARE_UNIFORM_BUFFER_STRUCT_MEMBER(FVector4, StartColor)
+UNIFORM_MEMBER(FVector4, StartColor)
 END_UNIFORM_BUFFER_STRUCT(FPixelShaderConstantParameters)
 
 //This buffer is for variables that change very often (each frame for example)
 BEGIN_UNIFORM_BUFFER_STRUCT(FPixelShaderVariableParameters, )
-DECLARE_UNIFORM_BUFFER_STRUCT_MEMBER(float, TextureParameterBlendFactor)
-DECLARE_UNIFORM_BUFFER_STRUCT_MEMBER(FVector4, EndColor)
+UNIFORM_MEMBER(float, TextureParameterBlendFactor)
+UNIFORM_MEMBER(FVector4, EndColor)
 END_UNIFORM_BUFFER_STRUCT(FPixelShaderVariableParameters)
 
 typedef TUniformBufferRef<FPixelShaderConstantParameters> FPixelShaderConstantParametersRef;
@@ -88,6 +88,8 @@ public:
 	FVertexShaderExample(const ShaderMetaType::CompiledShaderInitializerType& Initializer) :
 		FGlobalShader(Initializer)
 	{}
+	//Required function
+	static bool ShouldCompilePermutation(const FGlobalShaderPermutationParameters& Parameters);
 	FVertexShaderExample() {}
 };
 
@@ -124,6 +126,8 @@ public:
 	void SetUniformBuffers(FRHICommandList& RHICmdList, FPixelShaderConstantParameters& ConstantParameters, FPixelShaderVariableParameters& VariableParameters);
 	//This is used to clean up the buffer binds after each invocation to let them be changed and used elsewhere if needed.
 	void UnbindBuffers(FRHICommandList& RHICmdList);
+	//Required function
+	static bool ShouldCompilePermutation(const FGlobalShaderPermutationParameters& Parameters);
 
 private:
 	//This is how you declare resources that are going to be made available in the HLSL

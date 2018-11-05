@@ -1,4 +1,6 @@
-#include "Common.usf"
+//Since we can't #include private Engine shaders such as Common.ush we have to copy the needed Shaders from the Engine' Shader directory.
+//When this gets chaned in the future, we could change this to #include "/Engine/Private/Common.ush".
+#include "/Engine/Private/Common.ush"
 
 // Base shader origin:
 // https://www.shadertoy.com/view/MdXSzS

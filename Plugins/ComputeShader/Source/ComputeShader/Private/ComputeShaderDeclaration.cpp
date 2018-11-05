@@ -38,9 +38,9 @@ FComputeShaderDeclaration::FComputeShaderDeclaration(const ShaderMetaType::Compi
 	OutputSurface.Bind(Initializer.ParameterMap, TEXT("OutputSurface"));
 }
 
-void FComputeShaderDeclaration::ModifyCompilationEnvironment(EShaderPlatform Platform, FShaderCompilerEnvironment& OutEnvironment)
+void FComputeShaderDeclaration::ModifyCompilationEnvironment(const FGlobalShaderPermutationParameters& Parameters, FShaderCompilerEnvironment& OutEnvironment)
 {
-	FGlobalShader::ModifyCompilationEnvironment(Platform, OutEnvironment);
+	FGlobalShader::ModifyCompilationEnvironment(Parameters, OutEnvironment);
 	OutEnvironment.CompilerFlags.Add(CFLAG_StandardOptimization);
 }
 
@@ -73,9 +73,14 @@ void FComputeShaderDeclaration::UnbindBuffers(FRHICommandList& RHICmdList)
 		RHICmdList.SetUAVParameter(ComputeShaderRHI, OutputSurface.GetBaseIndex(), FUnorderedAccessViewRHIRef());
 }
 
+bool FComputeShaderDeclaration::ShouldCompilePermutation(const FGlobalShaderPermutationParameters& Parameters)
+{
+	return true;
+}
+
 //This is what will instantiate the shader into the engine from the engine/Shaders folder
 //                      ShaderType                    ShaderFileName                Shader function name       Type
-IMPLEMENT_SHADER_TYPE(, FComputeShaderDeclaration, TEXT("ComputeShaderExample"), TEXT("MainComputeShader"), SF_Compute);
+IMPLEMENT_SHADER_TYPE(, FComputeShaderDeclaration, TEXT("/Plugin/ComputeShader/Private/ComputeShaderExample.usf"), TEXT("MainComputeShader"), SF_Compute);
 
 //This is required for the plugin to build :)
 IMPLEMENT_MODULE(FDefaultModuleImpl, ComputeShader)

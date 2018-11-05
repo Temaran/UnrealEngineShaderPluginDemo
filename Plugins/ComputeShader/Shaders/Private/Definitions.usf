@@ -1,0 +1,133 @@
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
+
+/*=============================================================================
+	Definitions.usf: Defines undefined defines to 0 as Cg can't handle them.
+=============================================================================*/
+
+#pragma once
+
+#ifndef MATERIAL_TWOSIDED
+#define	MATERIAL_TWOSIDED								0
+#endif
+
+#ifndef MATERIAL_TANGENTSPACENORMAL
+#define	MATERIAL_TANGENTSPACENORMAL						0
+#endif
+
+#ifndef MATERIAL_TWOSIDED_SEPARATE_PASS
+#define	MATERIAL_TWOSIDED_SEPARATE_PASS					0
+#endif
+
+#ifndef MATERIALBLENDING_MASKED
+#define MATERIALBLENDING_MASKED							0
+#endif
+
+#ifndef MATERIALBLENDING_TRANSLUCENT
+#define MATERIALBLENDING_TRANSLUCENT					0
+#endif
+
+#ifndef MATERIALBLENDING_ADDITIVE
+#define MATERIALBLENDING_ADDITIVE						0
+#endif
+
+#ifndef MATERIALBLENDING_MODULATE
+#define MATERIALBLENDING_MODULATE						0
+#endif
+
+#ifndef MATERIALBLENDING_ALPHACOMPOSITE
+#define MATERIALBLENDING_ALPHACOMPOSITE					0
+#endif
+
+#ifndef MATERIAL_SHADINGMODEL_DEFAULT_LIT
+#define MATERIAL_SHADINGMODEL_DEFAULT_LIT				0
+#endif
+
+#ifndef MATERIAL_SHADINGMODEL_SUBSURFACE
+#define MATERIAL_SHADINGMODEL_SUBSURFACE				0
+#endif
+
+#ifndef MATERIAL_SHADINGMODEL_PREINTEGRATED_SKIN
+#define MATERIAL_SHADINGMODEL_PREINTEGRATED_SKIN		0
+#endif
+
+#ifndef MATERIAL_SHADINGMODEL_UNLIT
+#define	MATERIAL_SHADINGMODEL_UNLIT						0
+#endif
+
+#ifndef HAS_PRIMITIVE_UNIFORM_BUFFER
+#define	HAS_PRIMITIVE_UNIFORM_BUFFER					0
+#endif
+
+#ifndef USING_TESSELLATION
+#define USING_TESSELLATION								0
+#endif
+
+#ifndef GBUFFER_HAS_VELOCITY
+#define GBUFFER_HAS_VELOCITY							0
+#endif
+
+#define PC_D3D											SM5_PROFILE
+
+#ifndef NEEDS_LIGHTMAP_COORDINATE
+#define NEEDS_LIGHTMAP_COORDINATE						0
+#endif
+
+#ifndef TESSELLATION_TYPE_FLAT
+#define TESSELLATION_TYPE_FLAT							0
+#endif
+
+#ifndef TESSELLATION_TYPE_PNTRIANGLES
+#define TESSELLATION_TYPE_PNTRIANGLES					0
+#endif
+
+#ifndef USE_ADAPTIVE_TESSELLATION_FACTOR
+#define USE_ADAPTIVE_TESSELLATION_FACTOR				1
+#endif
+
+#ifndef LANDSCAPE_XYOFFSET
+#define LANDSCAPE_XYOFFSET								0
+#endif
+
+#ifndef MATERIAL_ATMOSPHERIC_FOG
+#define	MATERIAL_ATMOSPHERIC_FOG						0
+#endif
+
+#ifndef BASEPASS_ATMOSPHERIC_FOG
+#define	BASEPASS_ATMOSPHERIC_FOG						0
+#endif
+
+#ifndef NUM_VF_PACKED_INTERPOLANTS
+#define NUM_VF_PACKED_INTERPOLANTS						0
+#endif
+
+#ifndef REVERSEBITS
+#define REVERSEBITS										reversebits
+#endif
+
+#ifndef INSTANCED_STEREO
+#define INSTANCED_STEREO								0
+#endif	
+
+#ifndef MULTI_VIEW
+#define MULTI_VIEW									0
+#endif	
+
+#ifndef CLEAR_COAT_BOTTOM_NORMAL
+#define CLEAR_COAT_BOTTOM_NORMAL						0
+#endif
+
+#ifndef TEX_COORD_SCALE_ANALYSIS
+#define TEX_COORD_SCALE_ANALYSIS						0		
+#endif
+
+#define ISOLATE
+#define NOEXPRESSIONOPTIMIZATIONS						
+
+#ifndef HAS_INVERTED_Z_BUFFER
+#define HAS_INVERTED_Z_BUFFER	1
+#endif
+
+/** When defined sets the layer index for volumetric rendering in the vertex shader, rather than using a geometry shader */
+#ifndef USING_VERTEX_SHADER_LAYER
+#define USING_VERTEX_SHADER_LAYER	0
+#endif
