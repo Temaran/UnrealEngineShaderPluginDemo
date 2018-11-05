@@ -38,9 +38,9 @@ FComputeShaderDeclaration::FComputeShaderDeclaration(const ShaderMetaType::Compi
 	OutputSurface.Bind(Initializer.ParameterMap, TEXT("OutputSurface"));
 }
 
-void FComputeShaderDeclaration::ModifyCompilationEnvironment(EShaderPlatform Platform, FShaderCompilerEnvironment& OutEnvironment)
+void FComputeShaderDeclaration::ModifyCompilationEnvironment(const FGlobalShaderPermutationParameters& Parameters, FShaderCompilerEnvironment& OutEnvironment)
 {
-	FGlobalShader::ModifyCompilationEnvironment(Platform, OutEnvironment);
+	FGlobalShader::ModifyCompilationEnvironment(Parameters, OutEnvironment);
 	OutEnvironment.CompilerFlags.Add(CFLAG_StandardOptimization);
 }
 
@@ -71,6 +71,11 @@ void FComputeShaderDeclaration::UnbindBuffers(FRHICommandList& RHICmdList)
 
 	if (OutputSurface.IsBound())
 		RHICmdList.SetUAVParameter(ComputeShaderRHI, OutputSurface.GetBaseIndex(), FUnorderedAccessViewRHIRef());
+}
+
+bool FComputeShaderDeclaration::ShouldCompilePermutation(const FGlobalShaderPermutationParameters& Parameters)
+{
+	return true;
 }
 
 //This is what will instantiate the shader into the engine from the engine/Shaders folder

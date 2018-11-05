@@ -30,12 +30,12 @@
 
 //This buffer should contain variables that never, or rarely change
 BEGIN_UNIFORM_BUFFER_STRUCT(FComputeShaderConstantParameters, )
-DECLARE_UNIFORM_BUFFER_STRUCT_MEMBER(float, SimulationSpeed)
+UNIFORM_MEMBER(float, SimulationSpeed)
 END_UNIFORM_BUFFER_STRUCT(FComputeShaderConstantParameters)
 
 //This buffer is for variables that change very often (each frame for example)
 BEGIN_UNIFORM_BUFFER_STRUCT(FComputeShaderVariableParameters, )
-DECLARE_UNIFORM_BUFFER_STRUCT_MEMBER(float, TotalTimeElapsedSeconds)
+UNIFORM_MEMBER(float, TotalTimeElapsedSeconds)
 END_UNIFORM_BUFFER_STRUCT(FComputeShaderVariableParameters)
 
 typedef TUniformBufferRef<FComputeShaderConstantParameters> FComputeShaderConstantParametersRef;
@@ -58,7 +58,7 @@ public:
 
 	static bool ShouldCache(EShaderPlatform Platform) { return IsFeatureLevelSupported(Platform, ERHIFeatureLevel::SM5); }
 
-	static void ModifyCompilationEnvironment(EShaderPlatform Platform, FShaderCompilerEnvironment& OutEnvironment);
+	static void ModifyCompilationEnvironment(const FGlobalShaderPermutationParameters& Parameters, FShaderCompilerEnvironment& OutEnvironment);
 
 	virtual bool Serialize(FArchive& Ar) override
 	{
@@ -75,6 +75,8 @@ public:
 	void SetUniformBuffers(FRHICommandList& RHICmdList, FComputeShaderConstantParameters& ConstantParameters, FComputeShaderVariableParameters& VariableParameters);
 	//This is used to clean up the buffer binds after each invocation to let them be changed and used elsewhere if needed.
 	void UnbindBuffers(FRHICommandList& RHICmdList);
+	//Required function
+	static bool ShouldCompilePermutation(const FGlobalShaderPermutationParameters& Parameters);
 
 private:
 	//This is the actual output resource that we will bind to the compute shader

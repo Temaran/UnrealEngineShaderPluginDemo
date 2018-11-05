@@ -81,6 +81,11 @@ void FPixelShaderDeclaration::UnbindBuffers(FRHICommandList& RHICmdList) {
     }
 }
 
+bool FPixelShaderDeclaration::ShouldCompilePermutation(const FGlobalShaderPermutationParameters& Parameters)
+{
+	return true;
+}
+
 //This is what will instantiate the shader into the engine from the engine/Shaders folder
 //                      ShaderType               ShaderFileName     Shader function name            Type
 IMPLEMENT_SHADER_TYPE(, FVertexShaderExample, TEXT("/Plugin/PixelShader/Private/PixelShaderExample.usf"),
@@ -90,3 +95,8 @@ IMPLEMENT_SHADER_TYPE(, FPixelShaderDeclaration, TEXT("/Plugin/PixelShader/Priva
 
 //Needed to make sure the plugin works :)
 IMPLEMENT_MODULE(FDefaultModuleImpl, PixelShader)
+
+bool FVertexShaderExample::ShouldCompilePermutation(const FGlobalShaderPermutationParameters& Parameters)
+{
+	return true;
+}
