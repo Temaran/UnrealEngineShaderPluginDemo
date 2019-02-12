@@ -22,6 +22,7 @@
 * THE SOFTWARE.
 ******************************************************************************/
 
+#include "ComputeShaderUsageExample.h"
 #include "ComputeShaderPrivatePCH.h"
 
 #define NUM_THREADS_PER_GROUP_DIMENSION 32 //This has to be the same as in the compute shader's spec [X, X, 1]
@@ -31,6 +32,8 @@ FComputeShaderUsageExample::FComputeShaderUsageExample(float SimulationSpeed, in
 	FeatureLevel = ShaderFeatureLevel;
 
 	ConstantParameters.SimulationSpeed = SimulationSpeed;
+	ConstantParameters.SizeX = SizeX;
+	ConstantParameters.SizeY = SizeY;
 
 	VariableParameters = FComputeShaderVariableParameters();
 
