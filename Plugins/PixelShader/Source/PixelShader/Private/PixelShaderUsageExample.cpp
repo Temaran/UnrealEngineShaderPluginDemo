@@ -22,6 +22,7 @@
 * THE SOFTWARE.
 ******************************************************************************/
 
+#include "PixelShaderUsageExample.h"
 #include "PixelShaderPrivatePCH.h"
 #include "Public/RHIStaticStates.h"
 #include "Public/PipelineStateCache.h"
