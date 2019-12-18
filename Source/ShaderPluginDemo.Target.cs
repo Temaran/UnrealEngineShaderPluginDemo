@@ -9,5 +9,7 @@ public class ShaderPluginDemoTarget : TargetRules
         : base(Target)
 	{
 		Type = TargetType.Game;
-	}
+        DefaultBuildSettings = BuildSettingsVersion.V2;
+        ExtraModuleNames.Add("ShaderPluginDemo");
+    }
 }

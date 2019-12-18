@@ -7,7 +7,9 @@ public class ShaderPluginDemoEditorTarget : TargetRules
 {
 	public ShaderPluginDemoEditorTarget(TargetInfo Target)
         : base(Target)
-	{
-		Type = TargetType.Editor;
-	}
+    {
+        Type = TargetType.Editor;
+        DefaultBuildSettings = BuildSettingsVersion.V2;
+        ExtraModuleNames.Add("ShaderPluginDemo");
+    }
 }
