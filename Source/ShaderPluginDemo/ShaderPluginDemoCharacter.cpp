@@ -1,4 +1,26 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+/******************************************************************************
+* The MIT License (MIT)
+*
+* Copyright (c) 2015-2020 Fredrik Lindh
+*
+* Permission is hereby granted, free of charge, to any person obtaining a copy
+* of this software and associated documentation files (the "Software"), to deal
+* in the Software without restriction, including without limitation the rights
+* to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+* copies of the Software, and to permit persons to whom the Software is
+* furnished to do so, subject to the following conditions:
+*
+* The above copyright notice and this permission notice shall be included in
+* all copies or substantial portions of the Software.
+*
+* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+* AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+* THE SOFTWARE.
+******************************************************************************/
 
 #include "ShaderPluginDemoCharacter.h"
 
@@ -9,26 +31,18 @@
 #include "GameFramework/InputSettings.h"
 #include "Kismet/GameplayStatics.h"
 
-DEFINE_LOG_CATEGORY_STATIC(LogFPChar, Warning, All);
-
-//////////////////////////////////////////////////////////////////////////
-// AShaderPluginDemoCharacter
-
-AShaderPluginDemoCharacter::AShaderPluginDemoCharacter() {
-    // Set size for collision capsule
+AShaderPluginDemoCharacter::AShaderPluginDemoCharacter() 
+{
 	GetCapsuleComponent()->InitCapsuleSize(55.f, 96.0f);
 
-	// set our turn rates for input
 	BaseTurnRate = 45.f;
 	BaseLookUpRate = 45.f;
 
-	// Create a CameraComponent	
 	FirstPersonCameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("FirstPersonCamera"));
 	FirstPersonCameraComponent->SetupAttachment(GetCapsuleComponent());
 	FirstPersonCameraComponent->SetRelativeLocation(FVector(-39.56f, 1.75f, 64.f)); // Position the camera
 	FirstPersonCameraComponent->bUsePawnControlRotation = true;
 
-	// Create a mesh component that will be used when being viewed from a '1st person' view (when controlling this pawn)
 	Mesh1P = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("CharacterMesh1P"));
 	Mesh1P->SetOnlyOwnerSee(true);
 	Mesh1P->SetupAttachment(FirstPersonCameraComponent);
@@ -37,33 +51,18 @@ AShaderPluginDemoCharacter::AShaderPluginDemoCharacter() {
 	Mesh1P->SetRelativeRotation(FRotator(1.9f, -19.19f, 5.2f));
 	Mesh1P->SetRelativeLocation(FVector(-0.5f, -4.4f, -155.7f));
 
-	// Create a gun mesh component
 	FP_Gun = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("FP_Gun"));
-	FP_Gun->SetOnlyOwnerSee(true);			// only the owning player will see this mesh
+	FP_Gun->SetOnlyOwnerSee(true);
 	FP_Gun->bCastDynamicShadow = false;
 	FP_Gun->CastShadow = false;
-	// FP_Gun->SetupAttachment(Mesh1P, TEXT("GripPoint"));
 	FP_Gun->SetupAttachment(RootComponent);
 
 	FP_MuzzleLocation = CreateDefaultSubobject<USceneComponent>(TEXT("MuzzleLocation"));
 	FP_MuzzleLocation->SetupAttachment(FP_Gun);
 	FP_MuzzleLocation->SetRelativeLocation(FVector(0.2f, 48.4f, -10.6f));
 
-	// Default offset from the character location for projectiles to spawn
 	GunOffset = FVector(100.0f, 0.0f, 10.0f);
 
-
-
-
-
-
-
-
-
-
-
-
-    //ShaderPluginDemo variables
     EndColorBuildup = 0;
     EndColorBuildupDirection = 1;
     PixelShaderTopLeftColor = FColor::Green;
@@ -73,24 +72,23 @@ AShaderPluginDemoCharacter::AShaderPluginDemoCharacter() {
     TotalElapsedTime = 0;
 }
 
-//Since we need the featurelevel, we need to create the shaders from beginplay, and not in the ctor.
-void AShaderPluginDemoCharacter::BeginPlay() {
-    // Call the base class
+void AShaderPluginDemoCharacter::BeginPlay() 
+{
     Super::BeginPlay();
-    FP_Gun->AttachToComponent(Mesh1P,
-                              FAttachmentTransformRules::SnapToTargetIncludingScale,
-                              TEXT("GripPoint")); //Attach gun mesh component to Skeleton, doing it here because the skelton is not yet created in the constructor
+    FP_Gun->AttachToComponent(Mesh1P, FAttachmentTransformRules::SnapToTargetIncludingScale, TEXT("GripPoint"));
 
+	//Since we need the featurelevel, we need to create the shaders from beginplay, and not in the ctor.
 //     PixelShading = new FPixelShaderUsageExample(PixelShaderTopLeftColor,
 //             GetWorld()->Scene->GetFeatureLevel());
 //     ComputeShading = new FComputeShaderUsageExample(ComputeShaderSimulationSpeed,
 //             1024, 1024, GetWorld()->Scene->GetFeatureLevel());
 }
 
-//Do not forget cleanup :)
-void AShaderPluginDemoCharacter::BeginDestroy() {
+void AShaderPluginDemoCharacter::BeginDestroy() 
+{
     Super::BeginDestroy();
 
+	//Do not forget cleanup :)
 //     if (PixelShading) {
 //         delete PixelShading;
 //     }
@@ -100,19 +98,22 @@ void AShaderPluginDemoCharacter::BeginDestroy() {
 //     }
 }
 
-//Saving functions
-void AShaderPluginDemoCharacter::SavePixelShaderOutput() {
+void AShaderPluginDemoCharacter::SavePixelShaderOutput() 
+{
     //PixelShading->Save();
 }
-void AShaderPluginDemoCharacter::SaveComputeShaderOutput() {
+void AShaderPluginDemoCharacter::SaveComputeShaderOutput() 
+{
     //ComputeShading->Save();
 }
 
-void AShaderPluginDemoCharacter::ModifyComputeShaderBlend(float NewScalar) {
+void AShaderPluginDemoCharacter::ModifyComputeShaderBlend(float NewScalar) 
+{
     ComputeShaderBlendScalar = NewScalar;
 }
 
-void AShaderPluginDemoCharacter::Tick(float DeltaSeconds) {
+void AShaderPluginDemoCharacter::Tick(float DeltaSeconds) 
+{
     Super::Tick(DeltaSeconds);
 
     TotalElapsedTime += DeltaSeconds;
@@ -141,7 +142,8 @@ void AShaderPluginDemoCharacter::Tick(float DeltaSeconds) {
 //     }
 }
 
-void AShaderPluginDemoCharacter::OnFire() {
+void AShaderPluginDemoCharacter::OnFire() 
+{
     //Try to set a texture to the object we hit!
 //     FHitResult HitResult;
 //     FVector StartLocation = FirstPersonCameraComponent->GetComponentLocation();
@@ -187,56 +189,47 @@ void AShaderPluginDemoCharacter::OnFire() {
 }
 
 void AShaderPluginDemoCharacter::SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent)
-{	// set up gameplay key bindings
+{
 	check(PlayerInputComponent);
 
-	// Bind jump events
 	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &AShaderPluginDemoCharacter::Jump);
 	PlayerInputComponent->BindAction("Jump", IE_Released, this, &AShaderPluginDemoCharacter::StopJumping);
-
-	// Bind fire event
 	PlayerInputComponent->BindAction("Fire", IE_Pressed, this, &AShaderPluginDemoCharacter::OnFire);
 
-	// Bind movement events
 	PlayerInputComponent->BindAxis("MoveForward", this, &AShaderPluginDemoCharacter::MoveForward);
 	PlayerInputComponent->BindAxis("MoveRight", this, &AShaderPluginDemoCharacter::MoveRight);
 	PlayerInputComponent->BindAxis("Turn", this, &APawn::AddControllerYawInput);
 	PlayerInputComponent->BindAxis("TurnRate", this, &AShaderPluginDemoCharacter::TurnAtRate);
 	PlayerInputComponent->BindAxis("LookUp", this, &APawn::AddControllerPitchInput);
 	PlayerInputComponent->BindAxis("LookUpRate", this, &AShaderPluginDemoCharacter::LookUpAtRate);
-
-    //ShaderPluginDemo Specific input mappings
-	PlayerInputComponent->BindAction("SavePixelShaderOutput", IE_Pressed, this,
-                               &AShaderPluginDemoCharacter::SavePixelShaderOutput);
-	PlayerInputComponent->BindAction("SaveComputeShaderOutput", IE_Pressed, this,
-                               &AShaderPluginDemoCharacter::SaveComputeShaderOutput);
-	PlayerInputComponent->BindAxis("ComputeShaderBlend", this,
-                             &AShaderPluginDemoCharacter::ModifyComputeShaderBlend);
-    //ShaderPluginDemo Specific input mappings
-
-
+	
+	PlayerInputComponent->BindAction("SavePixelShaderOutput", IE_Pressed, this, &AShaderPluginDemoCharacter::SavePixelShaderOutput);
+	PlayerInputComponent->BindAction("SaveComputeShaderOutput", IE_Pressed, this, &AShaderPluginDemoCharacter::SaveComputeShaderOutput);
+	PlayerInputComponent->BindAxis("ComputeShaderBlend", this, &AShaderPluginDemoCharacter::ModifyComputeShaderBlend);
 }
 
-void AShaderPluginDemoCharacter::MoveForward(float Value) {
-    if (Value != 0.0f) {
-        // add movement in that direction
+void AShaderPluginDemoCharacter::MoveForward(float Value) 
+{
+    if (Value != 0.0f) 
+	{
         AddMovementInput(GetActorForwardVector(), Value);
     }
 }
 
-void AShaderPluginDemoCharacter::MoveRight(float Value) {
-    if (Value != 0.0f) {
-        // add movement in that direction
+void AShaderPluginDemoCharacter::MoveRight(float Value) 
+{
+    if (Value != 0.0f) 
+	{
         AddMovementInput(GetActorRightVector(), Value);
     }
 }
 
-void AShaderPluginDemoCharacter::TurnAtRate(float Rate) {
-    // calculate delta for this frame from the rate information
+void AShaderPluginDemoCharacter::TurnAtRate(float Rate) 
+{
     AddControllerYawInput(Rate * BaseTurnRate * GetWorld()->GetDeltaSeconds());
 }
 
-void AShaderPluginDemoCharacter::LookUpAtRate(float Rate) {
-    // calculate delta for this frame from the rate information
+void AShaderPluginDemoCharacter::LookUpAtRate(float Rate) 
+{
     AddControllerPitchInput(Rate * BaseLookUpRate * GetWorld()->GetDeltaSeconds());
 }

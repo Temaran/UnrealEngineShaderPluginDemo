@@ -1,4 +1,27 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+/******************************************************************************
+* The MIT License (MIT)
+*
+* Copyright (c) 2015-2020 Fredrik Lindh
+*
+* Permission is hereby granted, free of charge, to any person obtaining a copy
+* of this software and associated documentation files (the "Software"), to deal
+* in the Software without restriction, including without limitation the rights
+* to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+* copies of the Software, and to permit persons to whom the Software is
+* furnished to do so, subject to the following conditions:
+*
+* The above copyright notice and this permission notice shall be included in
+* all copies or substantial portions of the Software.
+*
+* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+* AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+* THE SOFTWARE.
+******************************************************************************/
+
 #pragma once
 
 #include "CoreMinimal.h"
@@ -15,124 +38,69 @@ class AShaderPluginDemoCharacter : public ACharacter
 {
 	GENERATED_BODY()
 
-	/** Pawn mesh: 1st person view (arms; seen only by self) */
+public:
 	UPROPERTY(VisibleDefaultsOnly, Category=Mesh)
 	class USkeletalMeshComponent* Mesh1P;
 
-	/** Gun mesh: 1st person view (seen only by self) */
 	UPROPERTY(VisibleDefaultsOnly, Category = Mesh)
 	class USkeletalMeshComponent* FP_Gun;
 
-	/** Location on gun mesh where projectiles should spawn. */
 	UPROPERTY(VisibleDefaultsOnly, Category = Mesh)
 	class USceneComponent* FP_MuzzleLocation;
 
-	/** First person camera */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	class UCameraComponent* FirstPersonCameraComponent;
-public:
-	AShaderPluginDemoCharacter();
 
-	virtual void BeginPlay();
-
-	/** Base turn rate, in deg/sec. Other scaling may affect final turn rate. */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category=Camera)
-	float BaseTurnRate;
-
-	/** Base look up/down rate, in deg/sec. Other scaling may affect final rate. */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category=Camera)
-	float BaseLookUpRate;
-
-	/** Gun muzzle's offset from the characters location */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Gameplay)
-	FVector GunOffset;
-
-	/** Sound to play each time we fire */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Gameplay)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gameplay)
 	class USoundBase* FireSound;
 
-	/** AnimMontage to play each time we fire */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gameplay)
 	class UAnimMontage* FireAnimation;
-
-protected:
 	
-	/** Fires a projectile. */
-	void OnFire();
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera)
+	float BaseTurnRate;
 
-	/** Handles moving forward/backward */
-	void MoveForward(float Val);
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera)
+	float BaseLookUpRate;
 
-	/** Handles stafing movement, left and right */
-	void MoveRight(float Val);
-
-	/**
-	 * Called via input to turn at a given rate.
-	 * @param Rate	This is a normalized rate, i.e. 1.0 means 100% of desired turn rate
-	 */
-	void TurnAtRate(float Rate);
-
-	/**
-	 * Called via input to turn look up/down at a given rate.
-	 * @param Rate	This is a normalized rate, i.e. 1.0 means 100% of desired turn rate
-	 */
-	void LookUpAtRate(float Rate);
-
-	struct TouchData
-	{
-		TouchData() { bIsPressed = false;Location=FVector::ZeroVector;}
-		bool bIsPressed;
-		ETouchIndex::Type FingerIndex;
-		FVector Location;
-		bool bMoved;
-	};
-	void BeginTouch(const ETouchIndex::Type FingerIndex, const FVector Location);
-	void EndTouch(const ETouchIndex::Type FingerIndex, const FVector Location);
-	void TouchUpdate(const ETouchIndex::Type FingerIndex, const FVector Location);
-	TouchData	TouchItem;
-	
-protected:
-	// APawn interface
-	virtual void SetupPlayerInputComponent(UInputComponent* InputComponent) override;
-	// End of APawn interface
-
-	/* 
-	 * Configures input for touchscreen devices if there is a valid touch interface for doing so 
-	 *
-	 * @param	InputComponent	The input component pointer to bind controls to
-	 * @returns true if touch controls were enabled.
-	 */
-	bool EnableTouchscreenMovement(UInputComponent* InputComponent);
-
-public:
-	/** Returns Mesh1P subobject **/
-	FORCEINLINE class USkeletalMeshComponent* GetMesh1P() const { return Mesh1P; }
-	/** Returns FirstPersonCameraComponent subobject **/
-	FORCEINLINE class UCameraComponent* GetFirstPersonCameraComponent() const { return FirstPersonCameraComponent; }
-
-
-
-
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gameplay)
+	FVector GunOffset;
 
 	/************************************************************************/
 	/* Plugin Shader Demo variables!                                        */
 	/************************************************************************/
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = ShaderDemo)
-		FColor PixelShaderTopLeftColor;
+	FColor PixelShaderTopLeftColor;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = ShaderDemo)
-		float ComputeShaderSimulationSpeed;
+	float ComputeShaderSimulationSpeed;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = ShaderDemo)
-		UMaterialInterface* MaterialToApplyToClickedObject;
+	UMaterialInterface* MaterialToApplyToClickedObject;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = ShaderDemo)
-		UTextureRenderTarget2D* RenderTarget;
+	UTextureRenderTarget2D* RenderTarget;
 
-protected:
+public:
+	AShaderPluginDemoCharacter();
+	virtual void BeginPlay() override;
 	virtual void BeginDestroy() override;
 	virtual void Tick(float DeltaSeconds) override;
+
+protected:
+	void OnFire();
+	void MoveForward(float Val);
+	void MoveRight(float Val);
+	void TurnAtRate(float Rate);
+	void LookUpAtRate(float Rate);
+
+protected:
+	virtual void SetupPlayerInputComponent(UInputComponent* InputComponent) override;
+
+public:
+	FORCEINLINE class USkeletalMeshComponent* GetMesh1P() const { return Mesh1P; }
+	FORCEINLINE class UCameraComponent* GetFirstPersonCameraComponent() const { return FirstPersonCameraComponent; }
 
 private:
 // 	FPixelShaderUsageExample* PixelShading;
