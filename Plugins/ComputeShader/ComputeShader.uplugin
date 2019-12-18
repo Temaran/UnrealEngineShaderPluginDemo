@@ -1,14 +1,16 @@
 {
-    "PluginFileVersion" : 3,
-	
-	"FriendlyName" : "Compute Shader",
+    "FileVersion" : 3,
 	"Version" : 1,
-	"VersionName" : "1.0",
+	"VersionName" : "1.0",	
+	"FriendlyName" : "Compute Shader",
+	"Description" : "An example stand-alone compute shader that can be run from a plugin",
+	"Category" : "Temaran",
 	"CreatedBy" : "Temaran",
-	"CreatedByURL" : "temaran@gmail.com",
-	"EngineVersion" : "4.7.0",
-	"Description" : "An example stand alone compute shader that can be run from a plugin",
-	"Category" : "Programming Rendering.Plugins",
+	"CreatedByURL" : "https://github.com/Temaran",
+	"EngineVersion" : "4.24.0",
+	"CanContainContent": true,
+	"IsBetaVersion": true,
+	"Installed": false,
 	
     "Modules" :
 	[

@@ -2,26 +2,27 @@
 # Unreal Engine generated #
 # ======================= #
 Binaries/
+Build/
+Debug/
 DerivedDataCache/
+enc_temp_folder/
 Intermediate/
 Saved/
 
 # ======================= #
 # Visual Studio generated #
 # ======================= #
+.vs/
 *.opensdf
 *.opendb
 *.sdf
 *.sln
 *.suo
 *.user
+*.png
+*.db
  
 # ============ #
 # OS generated #
 # ============ #
 Thumbs.db
-
-# ============ #
-# Build        #
-# ============ #
-Stage/

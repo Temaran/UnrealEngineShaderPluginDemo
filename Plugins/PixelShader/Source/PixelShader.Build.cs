@@ -2,25 +2,25 @@ namespace UnrealBuildTool.Rules
 {
 	public class PixelShader : ModuleRules
 	{
-		public PixelShader(TargetInfo Target)
+		public PixelShader(ReadOnlyTargetRules Target)
+			: base(Target)
         {
-            PrivateIncludePaths.AddRange(
-                new string[] {
-					"PixelShader/Private"
-				}
-                );
+            PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
+			
+            PrivateIncludePaths.AddRange(new string[] 
+			{
+				"Private"
+			});
 
-			PublicDependencyModuleNames.AddRange(
-				new string[]
-				{
-					"Core",
-					"CoreUObject",
-                    "Engine",
-                    "RenderCore",
-                    "ShaderCore",
-                    "RHI"
-				}
-				);
+			PublicDependencyModuleNames.AddRange(new string[]
+			{
+				"Core",
+				"CoreUObject",
+				"Engine",
+				"RenderCore",
+				"ShaderCore",
+				"RHI"
+			});
 		}
 	}
 }
