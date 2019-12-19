@@ -1,9 +1,9 @@
 {
-    "FileVersion" : 3,
+  "FileVersion" : 3,
 	"Version" : 1,
 	"VersionName" : "1.0",	
-	"FriendlyName" : "Pixel Shader",
-	"Description" : "An example stand-alone pixel shader that can be run from a plugin",
+	"FriendlyName" : "Shader Plugin",
+	"Description" : "A plugin containing shaders. Intended to be used to understand in simple terms how to make your own shader plugins in UE4.",
 	"Category" : "Temaran",
 	"CreatedBy" : "Temaran",
 	"CreatedByURL" : "https://github.com/Temaran",
@@ -12,10 +12,10 @@
 	"IsBetaVersion": true,
 	"Installed": false,
 	
-    "Modules" :
+  "Modules" :
 	[
 		{
-			"Name" : "PixelShader",
+			"Name" : "ShaderPlugin",
 			"Type" : "Runtime",
 			"LoadingPhase" : "PostConfigInit"
 		}

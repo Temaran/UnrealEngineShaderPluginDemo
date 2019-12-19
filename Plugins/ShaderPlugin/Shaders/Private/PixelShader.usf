@@ -44,35 +44,35 @@ END_UNIFORM_BUFFER_STRUCT(FPixelShaderDynamicParameters)
 //////////////
 
 
-void MainVertexShader(
-	float4 InPosition : ATTRIBUTE0,
-	float2 InUV : ATTRIBUTE1,
-	out float2 OutUV : TEXCOORD0,
-	out float4 OutPosition : SV_POSITION
-	)
-{
-	OutPosition = InPosition;
-	OutUV = InUV;
-}
-
-Texture2D<uint> TextureParameter;
-
-void MainPixelShader(
-	in float2 uv : TEXCOORD0,
-	out float4 OutColor : SV_Target0
-	)
-{
-	//First we need to unpack the uint material and retrieve the underlying R8G8B8A8_UINT values.
-	float sizeX, sizeY;
-	TextureParameter.GetDimensions(sizeX, sizeY);
-	uint packedValue = TextureParameter.Load(int3(sizeX * uv.x, sizeY * uv.y, 0));
-	uint r = (packedValue & 0x000000FF);
-	uint g = (packedValue & 0x0000FF00) >> 8;
-	uint b = (packedValue & 0x00FF0000) >> 16;
-	uint a = (packedValue & 0xFF000000) >> 24;
-	
-	//Here we will just blend using the TextureParameterBlendFactor between our simple color change shader and the input from the compute shader
-	float alpha = length(uv) / length(float2(1, 1));
-	OutColor = lerp(PSConstant.StartColor, PSVariable.EndColor, alpha) * (1.0 - PSVariable.TextureParameterBlendFactor) 
-			   + float4(r, g, b, a) / 255.0 * PSVariable.TextureParameterBlendFactor;
-}
+//void MainVertexShader(
+//	float4 InPosition : ATTRIBUTE0,
+//	float2 InUV : ATTRIBUTE1,
+//	out float2 OutUV : TEXCOORD0,
+//	out float4 OutPosition : SV_POSITION
+//	)
+//{
+//	OutPosition = InPosition;
+//	OutUV = InUV;
+//}
+//
+//Texture2D<uint> TextureParameter;
+//
+//void MainPixelShader(
+//	in float2 uv : TEXCOORD0,
+//	out float4 OutColor : SV_Target0
+//	)
+//{
+//	//First we need to unpack the uint material and retrieve the underlying R8G8B8A8_UINT values.
+//	float sizeX, sizeY;
+//	TextureParameter.GetDimensions(sizeX, sizeY);
+//	uint packedValue = TextureParameter.Load(int3(sizeX * uv.x, sizeY * uv.y, 0));
+//	uint r = (packedValue & 0x000000FF);
+//	uint g = (packedValue & 0x0000FF00) >> 8;
+//	uint b = (packedValue & 0x00FF0000) >> 16;
+//	uint a = (packedValue & 0xFF000000) >> 24;
+//	
+//	//Here we will just blend using the TextureParameterBlendFactor between our simple color change shader and the input from the compute shader
+//	float alpha = length(uv) / length(float2(1, 1));
+//	OutColor = lerp(PSConstant.StartColor, PSVariable.EndColor, alpha) * (1.0 - PSVariable.TextureParameterBlendFactor) 
+//			   + float4(r, g, b, a) / 255.0 * PSVariable.TextureParameterBlendFactor;
+//}

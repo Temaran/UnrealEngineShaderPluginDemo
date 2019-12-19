@@ -22,10 +22,15 @@
 * THE SOFTWARE.
 ******************************************************************************/
 
-#pragma once
+#include "ShaderPluginModule.h"
+#include "Modules/ModuleManager.h"
+#include "Misc/Paths.h"
 
-#include "CoreUObject.h"
-#include "Engine.h"
+IMPLEMENT_MODULE(FShaderPluginModule, ShaderPlugin)
 
-#include "PixelShaderDeclaration.h"
-#include "PixelShaderUsageExample.h"
+void FShaderPluginModule::StartupModule()
+{
+	// Maps virtual shader source directory to the plugin's actual shaders directory.
+	FString PluginShaderDir = FPaths::Combine(FPaths::ProjectPluginsDir(), TEXT("ShaderPlugin/Shaders"));
+	AddShaderSourceDirectoryMapping(TEXT("/Plugin/ShaderPlugin"), PluginShaderDir);
+}

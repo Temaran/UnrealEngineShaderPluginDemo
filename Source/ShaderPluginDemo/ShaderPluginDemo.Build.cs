@@ -38,8 +38,7 @@ public class ShaderPluginDemo : ModuleRules
 			"Engine", 
 			"InputCore", 
 			"RHI", 
-			//"PixelShader", 
-			//"ComputeShader" 
+			"ShaderPlugin" 
 		});
 	}
 }

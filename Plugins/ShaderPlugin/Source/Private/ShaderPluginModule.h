@@ -24,8 +24,12 @@
 
 #pragma once
 
-#include "CoreUObject.h"
-#include "Engine.h"
+#include "CoreMinimal.h"
 
-#include "ComputeShaderDeclaration.h"
-#include "ComputeShaderUsageExample.h"
+#include "Modules/ModuleInterface.h"
+
+class FShaderPluginModule : public IModuleInterface
+{
+public:
+	virtual void StartupModule() override;
+};

@@ -77,25 +77,24 @@ void AShaderPluginDemoCharacter::BeginPlay()
     Super::BeginPlay();
     FP_Gun->AttachToComponent(Mesh1P, FAttachmentTransformRules::SnapToTargetIncludingScale, TEXT("GripPoint"));
 
-	//Since we need the featurelevel, we need to create the shaders from beginplay, and not in the ctor.
-//     PixelShading = new FPixelShaderUsageExample(PixelShaderTopLeftColor,
-//             GetWorld()->Scene->GetFeatureLevel());
-//     ComputeShading = new FComputeShaderUsageExample(ComputeShaderSimulationSpeed,
-//             1024, 1024, GetWorld()->Scene->GetFeatureLevel());
+	// Since we need the feature level, we need to create the shaders from begin play, and not in the ctor.
+//     PixelShading = new FPixelShaderUsageExample(PixelShaderTopLeftColor, GetWorld()->Scene->GetFeatureLevel());
+	ComputeShader = new FComputeShaderExample(ComputeShaderSimulationSpeed, 1024, 1024, GetWorld()->Scene->GetFeatureLevel());
 }
 
 void AShaderPluginDemoCharacter::BeginDestroy() 
 {
     Super::BeginDestroy();
 
-	//Do not forget cleanup :)
+	// Do not forget cleanup :)
 //     if (PixelShading) {
 //         delete PixelShading;
 //     }
 // 
-//     if (ComputeShading) {
-//         delete ComputeShading;
-//     }
+     if (ComputeShader)
+	 {
+         delete ComputeShader;
+     }
 }
 
 void AShaderPluginDemoCharacter::SavePixelShaderOutput() 
@@ -104,7 +103,10 @@ void AShaderPluginDemoCharacter::SavePixelShaderOutput()
 }
 void AShaderPluginDemoCharacter::SaveComputeShaderOutput() 
 {
-    //ComputeShading->Save();
+	if (ComputeShader)
+	{
+		ComputeShader->Save();
+	}
 }
 
 void AShaderPluginDemoCharacter::ModifyComputeShaderBlend(float NewScalar) 
@@ -144,7 +146,7 @@ void AShaderPluginDemoCharacter::Tick(float DeltaSeconds)
 
 void AShaderPluginDemoCharacter::OnFire() 
 {
-    //Try to set a texture to the object we hit!
+    // Try to set a texture to the object we hit!
 //     FHitResult HitResult;
 //     FVector StartLocation = FirstPersonCameraComponent->GetComponentLocation();
 //     FRotator Direction = FirstPersonCameraComponent->GetComponentRotation();

@@ -24,9 +24,9 @@
 
 namespace UnrealBuildTool.Rules
 {
-	public class ComputeShader : ModuleRules
+	public class ShaderPlugin : ModuleRules
 	{
-		public ComputeShader(ReadOnlyTargetRules Target)
+		public ShaderPlugin(ReadOnlyTargetRules Target)
 			: base(Target)
         {			
             PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
@@ -36,13 +36,17 @@ namespace UnrealBuildTool.Rules
 				"Private"
 			});
 
-			PublicDependencyModuleNames.AddRange(new string[]
+            PrivateDependencyModuleNames.AddRange(new string[]
+            {
+                "Projects"
+            });
+
+            PublicDependencyModuleNames.AddRange(new string[]
 			{
 				"Core",
 				"CoreUObject",
                 "Engine",
                 "RenderCore",
-                "ShaderCore",
                 "RHI"
 			});
 		}

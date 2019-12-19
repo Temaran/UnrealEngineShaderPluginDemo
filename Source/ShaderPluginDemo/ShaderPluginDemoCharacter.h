@@ -28,7 +28,7 @@
 
 #include "GameFramework/Character.h"
 //#include "PixelShaderUsageExample.h"
-//#include "ComputeShaderUsageExample.h"
+#include "ComputeShaderExample.h"
 #include "ShaderPluginDemoCharacter.generated.h"
 
 class UInputComponent;
@@ -104,7 +104,7 @@ public:
 
 private:
 // 	FPixelShaderUsageExample* PixelShading;
-// 	FComputeShaderUsageExample* ComputeShading;
+ 	FComputeShaderExample* ComputeShader;
 
 	float EndColorBuildup;
 	float EndColorBuildupDirection;

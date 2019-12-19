@@ -24,32 +24,24 @@
 
 #pragma once
 
-#include "Private/PixelShaderDeclaration.h"
+#include "CoreMinimal.h"
 
 /***************************************************************************/
-/* This class demonstrates how to use the pixel shader we have declared.   */
+/* This class demonstrates how to use the compute shader we have declared. */
 /* Most importantly which RHI functions are needed to call and how to get  */
 /* some interesting output.                                                */
 /***************************************************************************/
-class PIXELSHADER_API FPixelShaderUsageExample
+class SHADERPLUGIN_API FComputeShaderExample
 {
 public:
-	FPixelShaderUsageExample(FColor StartColor, ERHIFeatureLevel::Type ShaderFeatureLevel);
-	~FPixelShaderUsageExample();
-
-	/********************************************************************************************************/
-	/* Let the user change rendertarget during runtime if they want to :D                                   */
-	/* @param RenderTarget - This is the output rendertarget!                                               */
-	/* @param InputTexture - This is a rendertarget that's used as a texture parameter to the shader :)     */
-	/* @param EndColor - This will be set to the dynamic parameter buffer each frame                        */
-	/* @param TextureParameterBlendFactor - The scalar weight that decides how much of the texture to blend */
-	/********************************************************************************************************/
-	void ExecutePixelShader(UTextureRenderTarget2D* RenderTarget, FTexture2DRHIRef InputTexture, FColor EndColor, float TextureParameterBlendFactor);
+	FComputeShaderExample(float InSimulationSpeed, int32 InTextureWidth, int32 InTextureHeight, ERHIFeatureLevel::Type ShaderFeatureLevel);
+	~FComputeShaderExample();
 
 	/************************************************************************/
-	/* Only execute this from the render thread!!!                          */
+	/* Run this to execute the compute shader once!                         */
+	/* @param TotalElapsedTimeSeconds - We use this for simulation state    */
 	/************************************************************************/
-	void ExecutePixelShaderInternal();
+	void ExecuteComputeShader(float TotalElapsedTimeSeconds);
 
 	/************************************************************************/
 	/* Save a screenshot of the target to the project saved folder          */
@@ -59,23 +51,25 @@ public:
 		bSave = true;
 	}
 
-private:
-	bool bIsPixelShaderExecuting;
-	bool bMustRegenerateSRV;
-	bool bIsUnloading;
-	bool bSave;
+	FTexture2DRHIRef GetTexture() { return Texture; }
 
-	FPixelShaderConstantParameters ConstantParameters;
-	FPixelShaderVariableParameters VariableParameters;
+private:
+	int32 TextureWidth;
+	int32 TextureHeight;
+	float SimulationSpeed;
+
+	volatile bool bIsComputeShaderExecuting;
+	volatile bool bIsUnloading;
+	volatile bool bSave;
+
 	ERHIFeatureLevel::Type FeatureLevel;
 
 	/** Main texture */
-	FTexture2DRHIRef CurrentTexture;
-	FTexture2DRHIRef TextureParameter;
-	UTextureRenderTarget2D* CurrentRenderTarget;
-	
-	/** Since we are only reading from the resource, we do not need a UAV; an SRV is sufficient */
-	FShaderResourceViewRHIRef TextureParameterSRV;
+	FTexture2DRHIRef Texture;
 
+	/** We need a UAV if we want to be able to write to the resource*/
+	FUnorderedAccessViewRHIRef TextureUAV;
+
+	void ExecuteComputeShader_RenderThread(float TotalElapsedTimeSeconds);
 	void SaveScreenshot(FRHICommandListImmediate& RHICmdList);
 };
