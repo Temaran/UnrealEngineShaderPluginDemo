@@ -22,9 +22,12 @@
 * THE SOFTWARE.
 ******************************************************************************/
 
+#include "ComputeShaderDeclaration.h"
 #include "ComputeShaderPrivatePCH.h"
 #include "ShaderParameterUtils.h"
 #include "RHIStaticStates.h"
+#include "Modules/ModuleManager.h"
+#include "Interfaces/IPluginManager.h"
 
 //These are needed to actually implement the constant buffers so they are available inside our shader
 //They also need to be unique over the entire solution since they can in fact be accessed from any shader
@@ -82,5 +85,26 @@ bool FComputeShaderDeclaration::ShouldCompilePermutation(const FGlobalShaderPerm
 //                      ShaderType                    ShaderFileName                Shader function name       Type
 IMPLEMENT_SHADER_TYPE(, FComputeShaderDeclaration, TEXT("/Plugin/ComputeShader/Private/ComputeShaderExample.usf"), TEXT("MainComputeShader"), SF_Compute);
 
-//This is required for the plugin to build :)
-IMPLEMENT_MODULE(FDefaultModuleImpl, ComputeShader)
+//Needed to make sure the plugin works :)
+class FComputeShaderModule : public IModuleInterface
+{
+    /** IModuleInterface implementation */
+    virtual void StartupModule() override;
+    virtual void ShutdownModule() override;
+};
+
+IMPLEMENT_MODULE(FComputeShaderModule, PixelShader)
+
+void FComputeShaderModule::StartupModule()
+{
+#if 1
+    FString PluginShaderDir = FPaths::Combine(IPluginManager::Get().FindPlugin(TEXT("ComputeShader"))->GetBaseDir(), TEXT("Shaders"));
+    AddShaderSourceDirectoryMapping(TEXT("/Plugin/ComputeShader"), PluginShaderDir);
+#endif
+}
+
+void FComputeShaderModule::ShutdownModule()
+{
+    // This function may be called during shutdown to clean up your module.  For modules that support dynamic reloading,
+    // we call this function before unloading the module.
+}

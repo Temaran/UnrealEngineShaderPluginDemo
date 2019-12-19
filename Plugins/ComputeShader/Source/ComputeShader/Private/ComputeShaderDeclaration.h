@@ -31,6 +31,8 @@
 //This buffer should contain variables that never, or rarely change
 BEGIN_UNIFORM_BUFFER_STRUCT(FComputeShaderConstantParameters, )
 UNIFORM_MEMBER(float, SimulationSpeed)
+UNIFORM_MEMBER(float, SizeX)
+UNIFORM_MEMBER(float, SizeY)
 END_UNIFORM_BUFFER_STRUCT(FComputeShaderConstantParameters)
 
 //This buffer is for variables that change very often (each frame for example)

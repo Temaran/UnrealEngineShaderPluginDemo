@@ -4,6 +4,9 @@ namespace UnrealBuildTool.Rules
 	{
 		public PixelShader(ReadOnlyTargetRules Target) : base(Target)
         {
+		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
+		PrivatePCHHeaderFile = "Private/PixelShaderPrivatePCH.h";
+
             PrivateIncludePaths.AddRange(
                 new string[] {
 					"PixelShader/Private"
@@ -21,6 +24,14 @@ namespace UnrealBuildTool.Rules
                     "RHI"
 				}
 				);
+
+            PrivateDependencyModuleNames.AddRange(
+                new string[]
+                {
+                    "Projects",
+                    // ... add private dependencies that you statically link with here ...
+                }
+            );
 		}
 	}
 }

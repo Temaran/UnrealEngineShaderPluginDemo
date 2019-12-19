@@ -15,6 +15,8 @@ Uniform Buffers
 //This buffer should contain variables that never, or rarely change
 BEGIN_UNIFORM_BUFFER_STRUCT(FComputeShaderConstantParameters, )
 DECLARE_UNIFORM_BUFFER_STRUCT_MEMBER(float, SimulationSpeed)
+DECLARE_UNIFORM_BUFFER_STRUCT_MEMBER(float, SizeX)
+DECLARE_UNIFORM_BUFFER_STRUCT_MEMBER(float, SizeY)
 END_UNIFORM_BUFFER_STRUCT(FComputeShaderConstantParameters)
 
 //This buffer is for variables that change very often (each frame for example)
@@ -29,10 +31,7 @@ RWTexture2D<uint> OutputSurface;
 void MainComputeShader(uint3 ThreadId : SV_DispatchThreadID)
 {
 	//Set up some variables we are going to need
-	float sizeX, sizeY;
-	OutputSurface.GetDimensions(sizeX, sizeY);
-
-	float2 iResolution = float2(sizeX, sizeY);
+	float2 iResolution = float2(CSConstants.SizeX, CSConstants.SizeY);
 	float2 uv = (ThreadId.xy / iResolution.xy) - 0.5;
 	float iGlobalTime = CSConstants.SimulationSpeed * CSVariables.TotalTimeElapsedSeconds;
 

@@ -22,9 +22,17 @@
 * THE SOFTWARE.
 ******************************************************************************/
 
+#include "PixelShaderDeclaration.h"
 #include "PixelShaderPrivatePCH.h"
 #include "ShaderParameterUtils.h"
 #include "RHIStaticStates.h"
+#include "Modules/ModuleManager.h"
+#include "Interfaces/IPluginManager.h"
+
+#include "CoreMinimal.h"
+#include "Misc/Paths.h"
+//#include "ShaderCore.h"
+
 
 //These are needed to actually implement the constant buffers so they are available inside our shader
 //They also need to be unique over the entire solution since they can in fact be accessed from any shader
@@ -94,7 +102,27 @@ IMPLEMENT_SHADER_TYPE(, FPixelShaderDeclaration, TEXT("/Plugin/PixelShader/Priva
                       TEXT("MainPixelShader"), SF_Pixel);
 
 //Needed to make sure the plugin works :)
-IMPLEMENT_MODULE(FDefaultModuleImpl, PixelShader)
+class FPixelShaderModule : public IPixelShader
+{
+    /** IModuleInterface implementation */
+    virtual void StartupModule() override;
+    virtual void ShutdownModule() override;
+};
+
+IMPLEMENT_MODULE(FPixelShaderModule, PixelShader)
+
+void FPixelShaderModule::StartupModule()
+{
+    FString PluginShaderDir = FPaths::Combine(IPluginManager::Get().FindPlugin(TEXT("PixelShader"))->GetBaseDir(), TEXT("Shaders"));
+    AddShaderSourceDirectoryMapping(TEXT("/Plugin/PixelShader"), PluginShaderDir);
+}
+
+void FPixelShaderModule::ShutdownModule()
+{
+    // This function may be called during shutdown to clean up your module.  For modules that support dynamic reloading,
+    // we call this function before unloading the module.
+}
+
 
 bool FVertexShaderExample::ShouldCompilePermutation(const FGlobalShaderPermutationParameters& Parameters)
 {
