@@ -1,3 +1,6 @@
+**Notice**
+I have removed the master branch and updated default to be the latest major version instead to make it more clear what major version head belongs to. I'm currently working on an update for 4.24 since there has been some major changes in how you best work with global shaders in the engine.
+
 **Basics**
 
 Updated version of Temaran's Compute Shader Plugin to Unreal **4.21**. For more details see Temaran's original project: https://github.com/Temaran/UE4ShaderPluginDemo
