@@ -146,12 +146,12 @@ void FShaderUsageExample::SavePSScreenShot_RenderThread(FRHICommandListImmediate
 	FReadSurfaceDataFlags ReadDataFlags;
 	ReadDataFlags.SetLinearToGamma(false);
 	ReadDataFlags.SetOutputStencil(false);
-	ReadDataFlags.SetMip(0); //No mip supported ofc!
+	ReadDataFlags.SetMip(0);
 	
-	//This is pretty straight forward. Since we are using a standard format, we can use this convenience function instead of having to lock rect.
+	// This is pretty straight forward. Since we are using a standard format, we can use this convenience function instead of having to lock rect.
 	RHICmdList.ReadSurfaceData(CurrentTexture, FIntRect(0, 0, CurrentTexture->GetSizeX(), CurrentTexture->GetSizeY()), Bitmap, ReadDataFlags);
 
-	// if the format and texture type is supported
+	// If the format and texture type is supported
 	if (Bitmap.Num())
 	{
 		// Create screenshot folder if not already present.

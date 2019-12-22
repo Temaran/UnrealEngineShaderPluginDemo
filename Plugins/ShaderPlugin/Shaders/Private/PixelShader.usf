@@ -22,15 +22,8 @@
 * THE SOFTWARE.
 ******************************************************************************/
 
-#include "Common.usf"
-
-//PIXEL SHADER
-//////////////
-
-Texture2D<uint> ComputeShaderOutput;
-FVector4 StartColor;
-FVector4 EndColor;
-float BlendFactor;
+// VERTEX SHADER
+////////////////
 
 void MainVertexShader(float4 InPosition : ATTRIBUTE0, float2 InUV : ATTRIBUTE1, out float2 OutUV : TEXCOORD0, out float4 OutPosition : SV_POSITION)
 {
@@ -38,9 +31,17 @@ void MainVertexShader(float4 InPosition : ATTRIBUTE0, float2 InUV : ATTRIBUTE1, 
 	OutUV = InUV;
 }
 
+// PIXEL SHADER
+///////////////
+
+Texture2D<uint> ComputeShaderOutput;
+float4 StartColor;
+float4 EndColor;
+float BlendFactor;
+
 void MainPixelShader(in float2 uv : TEXCOORD0, out float4 OutColor : SV_Target0)
 {
-	//First we need to unpack the uint material and retrieve the underlying R8G8B8A8_UINT values.
+	// First we need to unpack the uint material and retrieve the underlying R8G8B8A8_UINT values.
 	float sizeX, sizeY;
 	ComputeShaderOutput.GetDimensions(sizeX, sizeY);
 	uint packedValue = ComputeShaderOutput.Load(int3(sizeX * uv.x, sizeY * uv.y, 0));
@@ -49,7 +50,7 @@ void MainPixelShader(in float2 uv : TEXCOORD0, out float4 OutColor : SV_Target0)
 	uint b = (packedValue & 0x00FF0000) >> 16;
 	uint a = (packedValue & 0xFF000000) >> 24;
 	
-	//Here we will just blend using the TextureParameterBlendFactor between our simple color change shader and the input from the compute shader
+	// Here we will just blend using the TextureParameterBlendFactor between our simple color change shader and the input from the compute shader
 	float alpha = length(uv) / length(float2(1, 1));
 	OutColor = lerp(StartColor, EndColor, alpha) * (1.0 - BlendFactor) + float4(r, g, b, a) / 255.0 * BlendFactor;
 }

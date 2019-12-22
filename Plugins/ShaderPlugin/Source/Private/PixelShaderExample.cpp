@@ -68,8 +68,8 @@ public:
 	}
 }; 
 
-//It seems to be the convention to expose all vertex declarations as globals, and then reference them as externs in the headers where they are needed.
-//It kind of makes sense since they do not contain any parameters that change and are purely used as their names suggest, as declarations :)
+// It seems to be the convention to expose all vertex declarations as globals, and then reference them as externs in the headers where they are needed.
+// It kind of makes sense since they do not contain any parameters that change and are purely used as their names suggest, as declarations :)
 TGlobalResource<FTextureVertexDeclaration> GTextureVertexDeclaration;
 
 /************************************************************************/
@@ -117,11 +117,11 @@ public:
 
 // Vertex shaders generally still use this macro
 //                           ShaderType                            ShaderPath                      Shader function name    Type
-IMPLEMENT_SHADER_TYPE(, FSimplePassThroughVS, TEXT("/Plugin/ShaderPlugin/Private/PixelShaderExample.usf"), TEXT("MainVertexShader"), SF_Vertex);
+IMPLEMENT_SHADER_TYPE(, FSimplePassThroughVS, TEXT("/Plugin/ShaderPlugin/Private/PixelShader.usf"), TEXT("MainVertexShader"), SF_Vertex);
 
 // For the pixel shader we will use the global macro.
 //                           ShaderType                            ShaderPath                      Shader function name    Type
-IMPLEMENT_GLOBAL_SHADER(FPixelShaderExamplePS, "/Plugin/ShaderPlugin/Private/PixelShaderExample.usf", "MainPixelShader", SF_Pixel);
+IMPLEMENT_GLOBAL_SHADER(FPixelShaderExamplePS, "/Plugin/ShaderPlugin/Private/PixelShader.usf", "MainPixelShader", SF_Pixel);
 
 void FPixelShaderExample::AddPass_RenderThread(FRDGBuilder& GraphBuilder, const FShaderUsageExampleParameters& DrawParameters, FShaderUsageExampleResources& DrawResources)
 {
@@ -139,7 +139,7 @@ void FPixelShaderExample::AddPass_RenderThread(FRDGBuilder& GraphBuilder, const 
 	GraphBuilder.AddPass(RDG_EVENT_NAME("ShaderPlugin PixelShaderExample"),	Parameters,	ERDGPassFlags::Raster, 
 	[Parameters, DrawParameters](FRHICommandList& RHICmdList)
 	{
-		//This is where the magic happens
+		// This is where the magic happens
 		FTexture2DRHIRef CurrentTexture = DrawParameters.RenderTarget->GetRenderTargetResource()->GetRenderTargetTexture();
 		FRHIRenderPassInfo RPInfo(CurrentTexture, ERenderTargetActions::Load_Store);
 
@@ -164,7 +164,7 @@ void FPixelShaderExample::AddPass_RenderThread(FRDGBuilder& GraphBuilder, const 
 		
 		SetGraphicsPipelineState(RHICmdList, GraphicsPSOInit);
 
-		FPixelShaderUtils::DrawFullscreenQuad(RHICmdList, 1); // Render quad
+		FPixelShaderUtils::DrawFullscreenQuad(RHICmdList, 1);
 
 		RHICmdList.EndRenderPass();
 	});

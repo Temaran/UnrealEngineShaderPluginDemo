@@ -156,7 +156,7 @@ void AShaderPluginDemoCharacter::OnFire()
 		TArray<UStaticMeshComponent*> StaticMeshComponents = TArray<UStaticMeshComponent*>();
 		AActor* HitActor = HitResult.GetActor();
 
-		if (NULL != HitActor)
+		if (nullptr != HitActor)
 		{
 			HitActor->GetComponents<UStaticMeshComponent>(StaticMeshComponents);
 
@@ -170,22 +170,15 @@ void AShaderPluginDemoCharacter::OnFire()
 		}
 	}
 
-	// try and play the sound if specified
-	if (FireSound != NULL)
+	if (FireSound)
 	{
 		UGameplayStatics::PlaySoundAtLocation(this, FireSound, GetActorLocation());
 	}
 
-	// try and play a firing animation if specified
-	if (FireAnimation != NULL)
+	UAnimInstance* AnimInstance = Mesh1P->GetAnimInstance();
+	if (AnimInstance && FireAnimation)
 	{
-		// Get the animation object for the arms mesh
-		UAnimInstance* AnimInstance = Mesh1P->GetAnimInstance();
-
-		if (AnimInstance != NULL)
-		{
-			AnimInstance->Montage_Play(FireAnimation, 1.f);
-		}
+		AnimInstance->Montage_Play(FireAnimation, 1.f);
 	}
 }
 
