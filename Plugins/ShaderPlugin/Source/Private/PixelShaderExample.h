@@ -22,23 +22,16 @@
 * THE SOFTWARE.
 ******************************************************************************/
 
-using UnrealBuildTool;
+#pragma once
 
-public class ShaderPluginDemo : ModuleRules
+#include "CoreMinimal.h"
+#include "ShaderUsageExample.h"
+
+/**************************************************************************************/
+/* This is just an interface we use to keep all the pixel shading code in one file.   */
+/**************************************************************************************/
+class FPixelShaderExample
 {
-	public ShaderPluginDemo(ReadOnlyTargetRules Target) 
-		: base(Target)
-	{
-		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
-
-		PublicDependencyModuleNames.AddRange(new string[] 
-		{ 
-			"Core", 
-			"CoreUObject", 
-			"Engine", 
-			"InputCore", 
-			"RHI", 
-			"ShaderPlugin" 
-		});
-	}
-}
+public:
+	static void AddPass_RenderThread(FRDGBuilder& GraphBuilder, const FShaderUsageExampleParameters& DrawParameters, FShaderUsageExampleResources& DrawResources);
+};

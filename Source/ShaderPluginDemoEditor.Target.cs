@@ -28,10 +28,10 @@ using System.Collections.Generic;
 public class ShaderPluginDemoEditorTarget : TargetRules
 {
 	public ShaderPluginDemoEditorTarget(TargetInfo Target)
-        : base(Target)
-    {
-        Type = TargetType.Editor;
-        DefaultBuildSettings = BuildSettingsVersion.V2;
-        ExtraModuleNames.Add("ShaderPluginDemo");
-    }
+		: base(Target)
+	{
+		Type = TargetType.Editor;
+		DefaultBuildSettings = BuildSettingsVersion.V2;
+		ExtraModuleNames.Add("ShaderPluginDemo");
+	}
 }

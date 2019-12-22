@@ -28,26 +28,27 @@ namespace UnrealBuildTool.Rules
 	{
 		public ShaderPlugin(ReadOnlyTargetRules Target)
 			: base(Target)
-        {			
-            PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
+		{			
+			PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 			
-            PrivateIncludePaths.AddRange(new string[] 
+			PrivateIncludePaths.AddRange(new string[] 
 			{
 				"Private"
 			});
 
-            PrivateDependencyModuleNames.AddRange(new string[]
-            {
-                "Projects"
-            });
+			PrivateDependencyModuleNames.AddRange(new string[]
+			{
+				"Projects"
+			});
 
-            PublicDependencyModuleNames.AddRange(new string[]
+			PublicDependencyModuleNames.AddRange(new string[]
 			{
 				"Core",
 				"CoreUObject",
-                "Engine",
-                "RenderCore",
-                "RHI"
+				"Engine",
+				"Renderer",
+				"RenderCore",
+				"RHI"
 			});
 		}
 	}

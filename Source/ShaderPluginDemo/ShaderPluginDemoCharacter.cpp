@@ -30,6 +30,7 @@
 #include "Components/InputComponent.h"
 #include "GameFramework/InputSettings.h"
 #include "Kismet/GameplayStatics.h"
+#include "Runtime/Engine/Classes/Materials/MaterialInstanceDynamic.h"
 
 AShaderPluginDemoCharacter::AShaderPluginDemoCharacter() 
 {
@@ -63,131 +64,129 @@ AShaderPluginDemoCharacter::AShaderPluginDemoCharacter()
 
 	GunOffset = FVector(100.0f, 0.0f, 10.0f);
 
-    EndColorBuildup = 0;
-    EndColorBuildupDirection = 1;
-    PixelShaderTopLeftColor = FColor::Green;
-    ComputeShaderSimulationSpeed = 1.0;
-    ComputeShaderBlend = 0.5f;
-    ComputeShaderBlendScalar = 0;
-    TotalElapsedTime = 0;
+	ShaderUsageExample = new FShaderUsageExample();
+	EndColorBuildup = 0;
+	EndColorBuildupDirection = 1;
+	PixelShaderTopLeftColor = FColor::Green;
+	ComputeShaderSimulationSpeed = 1.0;
+	ComputeShaderBlend = 0.5f;
+	ComputeShaderBlendScalar = 0;
+	TotalElapsedTime = 0;
+	bSaveComputeShaderOutput = false;
+	bSavePixelShaderOutput = false;
 }
 
 void AShaderPluginDemoCharacter::BeginPlay() 
 {
-    Super::BeginPlay();
-    FP_Gun->AttachToComponent(Mesh1P, FAttachmentTransformRules::SnapToTargetIncludingScale, TEXT("GripPoint"));
-
-	// Since we need the feature level, we need to create the shaders from begin play, and not in the ctor.
-//     PixelShading = new FPixelShaderUsageExample(PixelShaderTopLeftColor, GetWorld()->Scene->GetFeatureLevel());
-	ComputeShader = new FComputeShaderExample(ComputeShaderSimulationSpeed, 1024, 1024, GetWorld()->Scene->GetFeatureLevel());
+	Super::BeginPlay();
+	FP_Gun->AttachToComponent(Mesh1P, FAttachmentTransformRules::SnapToTargetIncludingScale, TEXT("GripPoint"));
 }
 
 void AShaderPluginDemoCharacter::BeginDestroy() 
 {
-    Super::BeginDestroy();
+	Super::BeginDestroy();
 
-	// Do not forget cleanup :)
-//     if (PixelShading) {
-//         delete PixelShading;
-//     }
-// 
-     if (ComputeShader)
-	 {
-         delete ComputeShader;
-     }
+	if (ShaderUsageExample)
+	{
+		delete ShaderUsageExample;
+	}
 }
 
 void AShaderPluginDemoCharacter::SavePixelShaderOutput() 
 {
-    //PixelShading->Save();
+	bSavePixelShaderOutput = true;
 }
 void AShaderPluginDemoCharacter::SaveComputeShaderOutput() 
 {
-	if (ComputeShader)
-	{
-		ComputeShader->Save();
-	}
+	bSaveComputeShaderOutput = true;
 }
 
 void AShaderPluginDemoCharacter::ModifyComputeShaderBlend(float NewScalar) 
 {
-    ComputeShaderBlendScalar = NewScalar;
+	ComputeShaderBlendScalar = NewScalar;
 }
 
 void AShaderPluginDemoCharacter::Tick(float DeltaSeconds) 
 {
-    Super::Tick(DeltaSeconds);
+	Super::Tick(DeltaSeconds);
 
-    TotalElapsedTime += DeltaSeconds;
+	TotalElapsedTime += DeltaSeconds;
 
-//     if (PixelShading) {
-//         EndColorBuildup = FMath::Clamp(EndColorBuildup + DeltaSeconds *
-//                                        EndColorBuildupDirection, 0.0f, 1.0f);
-// 
-//         if (EndColorBuildup >= 1.0 || EndColorBuildup <= 0) {
-//             EndColorBuildupDirection *= -1;
-//         }
-// 
-// 
-//         FTexture2DRHIRef InputTexture = NULL;
-// 
-//         if (ComputeShading) {
-//             ComputeShading->ExecuteComputeShader(TotalElapsedTime);
-//             InputTexture =
-//                 ComputeShading->GetTexture(); //This is the output texture from the compute shader that we will pass to the pixel shader.
-//         }
-// 
-//         ComputeShaderBlend = FMath::Clamp(ComputeShaderBlend +
-//                                           ComputeShaderBlendScalar * DeltaSeconds, 0.0f, 1.0f);
-//         PixelShading->ExecutePixelShader(RenderTarget, InputTexture,
-//                                          FColor(EndColorBuildup * 255, 0, 0, 255), ComputeShaderBlend);
-//     }
+	// Be aware that this will only render in the game tick framerate. 
+	// If you need to render in the game's framerate, it might be better to set a hook to the renderer instead.
+	// See RendererModule.h for which hooks are available. If you're not sure which one you should use, go for this one:
+	// void RegisterPostOpaqueRenderDelegate(const FPostOpaqueRenderDelegate& PostOpaqueRenderDelegate)
+	if (ShaderUsageExample)
+	{
+		EndColorBuildup = FMath::Clamp(EndColorBuildup + DeltaSeconds * EndColorBuildupDirection, 0.0f, 1.0f);
+		if (EndColorBuildup >= 1.0 || EndColorBuildup <= 0) 
+		{
+			EndColorBuildupDirection *= -1;
+		}
+		
+		ComputeShaderBlend = FMath::Clamp(ComputeShaderBlend + ComputeShaderBlendScalar * DeltaSeconds, 0.0f, 1.0f);
+
+		FShaderUsageExampleParameters DrawParameters(GetWorld()->Scene->GetFeatureLevel(), *RenderTarget, DeltaSeconds, TotalElapsedTime);
+		DrawParameters.SimulationSpeed = ComputeShaderSimulationSpeed;
+		DrawParameters.ComputeShaderBlend = ComputeShaderBlend;
+		DrawParameters.bSaveComputeShaderOutput = bSaveComputeShaderOutput;
+		DrawParameters.bSavePixelShaderOutput = bSavePixelShaderOutput;
+		DrawParameters.StartColor = PixelShaderTopLeftColor;
+		DrawParameters.EndColor = FColor(EndColorBuildup * 255, 0, 0, 255);
+
+		ShaderUsageExample->Draw(DrawParameters);
+	}
+
+	bSavePixelShaderOutput = false;
+	bSaveComputeShaderOutput = false;
 }
 
-void AShaderPluginDemoCharacter::OnFire() 
+void AShaderPluginDemoCharacter::OnFire()
 {
-    // Try to set a texture to the object we hit!
-//     FHitResult HitResult;
-//     FVector StartLocation = FirstPersonCameraComponent->GetComponentLocation();
-//     FRotator Direction = FirstPersonCameraComponent->GetComponentRotation();
-//     FVector EndLocation = StartLocation + Direction.Vector() * 10000;
-//     FCollisionQueryParams QueryParams;
-//     QueryParams.AddIgnoredActor(this);
-// 
-//     if (GetWorld()->LineTraceSingleByChannel(HitResult, StartLocation, EndLocation,
-//             ECC_Visibility, QueryParams)) {
-//         TArray<UStaticMeshComponent*> StaticMeshComponents =
-//             TArray<UStaticMeshComponent*>();
-//         AActor* HitActor = HitResult.GetActor();
-// 
-//         if (NULL != HitActor) {
-//             HitActor->GetComponents<UStaticMeshComponent>(StaticMeshComponents);
-// 
-//             for (int32 i = 0; i < StaticMeshComponents.Num(); i++) {
-//                 UStaticMeshComponent* CurrentStaticMeshPtr = StaticMeshComponents[i];
-//                 CurrentStaticMeshPtr->SetMaterial(0, MaterialToApplyToClickedObject);
-//                 UMaterialInstanceDynamic* MID =
-//                     CurrentStaticMeshPtr->CreateAndSetMaterialInstanceDynamic(0);
-//                 UTexture* CastedRenderTarget = Cast<UTexture>(RenderTarget);
-//                 MID->SetTextureParameterValue("InputTexture", CastedRenderTarget);
-//             }
-//         }
-//     }
-// 
-//     // try and play the sound if specified
-//     if (FireSound != NULL) {
-//         UGameplayStatics::PlaySoundAtLocation(this, FireSound, GetActorLocation());
-//     }
-// 
-//     // try and play a firing animation if specified
-//     if (FireAnimation != NULL) {
-//         // Get the animation object for the arms mesh
-//         UAnimInstance* AnimInstance = Mesh1P->GetAnimInstance();
-// 
-//         if (AnimInstance != NULL) {
-//             AnimInstance->Montage_Play(FireAnimation, 1.f);
-//         }
-//     }
+	// Try to set a texture to the object we hit!
+	FHitResult HitResult;
+	FVector StartLocation = FirstPersonCameraComponent->GetComponentLocation();
+	FRotator Direction = FirstPersonCameraComponent->GetComponentRotation();
+	FVector EndLocation = StartLocation + Direction.Vector() * 10000;
+	FCollisionQueryParams QueryParams;
+	QueryParams.AddIgnoredActor(this);
+
+	if (GetWorld()->LineTraceSingleByChannel(HitResult, StartLocation, EndLocation, ECC_Visibility, QueryParams))
+	{
+		TArray<UStaticMeshComponent*> StaticMeshComponents = TArray<UStaticMeshComponent*>();
+		AActor* HitActor = HitResult.GetActor();
+
+		if (NULL != HitActor)
+		{
+			HitActor->GetComponents<UStaticMeshComponent>(StaticMeshComponents);
+
+			for (int32 i = 0; i < StaticMeshComponents.Num(); i++) 
+			{
+				UStaticMeshComponent* CurrentStaticMeshPtr = StaticMeshComponents[i];
+				CurrentStaticMeshPtr->SetMaterial(0, MaterialToApplyToClickedObject);
+				UMaterialInstanceDynamic* MID =	CurrentStaticMeshPtr->CreateAndSetMaterialInstanceDynamic(0);
+				MID->SetTextureParameterValue("InputTexture", (UTexture*)RenderTarget);
+			}
+		}
+	}
+
+	// try and play the sound if specified
+	if (FireSound != NULL)
+	{
+		UGameplayStatics::PlaySoundAtLocation(this, FireSound, GetActorLocation());
+	}
+
+	// try and play a firing animation if specified
+	if (FireAnimation != NULL)
+	{
+		// Get the animation object for the arms mesh
+		UAnimInstance* AnimInstance = Mesh1P->GetAnimInstance();
+
+		if (AnimInstance != NULL)
+		{
+			AnimInstance->Montage_Play(FireAnimation, 1.f);
+		}
+	}
 }
 
 void AShaderPluginDemoCharacter::SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent)
@@ -212,26 +211,26 @@ void AShaderPluginDemoCharacter::SetupPlayerInputComponent(class UInputComponent
 
 void AShaderPluginDemoCharacter::MoveForward(float Value) 
 {
-    if (Value != 0.0f) 
+	if (Value != 0.0f) 
 	{
-        AddMovementInput(GetActorForwardVector(), Value);
-    }
+		AddMovementInput(GetActorForwardVector(), Value);
+	}
 }
 
 void AShaderPluginDemoCharacter::MoveRight(float Value) 
 {
-    if (Value != 0.0f) 
+	if (Value != 0.0f) 
 	{
-        AddMovementInput(GetActorRightVector(), Value);
-    }
+		AddMovementInput(GetActorRightVector(), Value);
+	}
 }
 
 void AShaderPluginDemoCharacter::TurnAtRate(float Rate) 
 {
-    AddControllerYawInput(Rate * BaseTurnRate * GetWorld()->GetDeltaSeconds());
+	AddControllerYawInput(Rate * BaseTurnRate * GetWorld()->GetDeltaSeconds());
 }
 
 void AShaderPluginDemoCharacter::LookUpAtRate(float Rate) 
 {
-    AddControllerPitchInput(Rate * BaseLookUpRate * GetWorld()->GetDeltaSeconds());
+	AddControllerPitchInput(Rate * BaseLookUpRate * GetWorld()->GetDeltaSeconds());
 }
