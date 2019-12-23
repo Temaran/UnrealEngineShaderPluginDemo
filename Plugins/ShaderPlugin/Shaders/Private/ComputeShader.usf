@@ -65,5 +65,6 @@ void MainComputeShader(uint3 ThreadId : SV_DispatchThreadID)
 	uint g = ((uint)(outputColor.g * 255.0)) << 8;
 	uint b = ((uint)(outputColor.b * 255.0)) << 16;
 	uint a = ((uint)(outputColor.a * 255.0)) << 24;
+	
 	OutputTexture[ThreadId.xy] = r | g | b | a;
 }

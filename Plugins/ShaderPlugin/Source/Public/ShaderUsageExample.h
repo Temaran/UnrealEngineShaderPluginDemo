@@ -29,7 +29,7 @@
 
 struct FShaderUsageExampleParameters
 {
-	class UTextureRenderTarget2D* RenderTarget;
+	UTextureRenderTarget2D* RenderTarget;
 	ERHIFeatureLevel::Type ShaderFeatureLevel;
 	FColor StartColor;
 	FColor EndColor;
@@ -40,8 +40,9 @@ struct FShaderUsageExampleParameters
 	bool bSaveComputeShaderOutput;
 	bool bSavePixelShaderOutput;
 
-	FShaderUsageExampleParameters(ERHIFeatureLevel::Type InShaderFeatureLevel, UTextureRenderTarget2D& InRenderTarget, float InDeltaTimeSeconds, float InTotalTimeSeconds)
-		: RenderTarget(&InRenderTarget)
+	FShaderUsageExampleParameters()	{ }
+	FShaderUsageExampleParameters(ERHIFeatureLevel::Type InShaderFeatureLevel, UTextureRenderTarget2D* InRenderTarget, float InDeltaTimeSeconds, float InTotalTimeSeconds)
+		: RenderTarget(InRenderTarget)
 		, ShaderFeatureLevel(InShaderFeatureLevel)
 		, StartColor(FColor::White)
 		, EndColor(FColor::White)
@@ -57,11 +58,11 @@ struct FShaderUsageExampleParameters
 struct FShaderUsageExampleResources
 {
 	FRDGTextureRef ComputeShaderOutput;
-	FRDGTextureUAVRef ComputeShaderOutputUAV;
+	TRefCountPtr<IPooledRenderTarget> RenderTarget;
 
-	FShaderUsageExampleResources()
+	FShaderUsageExampleResources(TRefCountPtr<IPooledRenderTarget>& InRenderTarget)
 		: ComputeShaderOutput(nullptr)
-		, ComputeShaderOutputUAV(nullptr)
+		, RenderTarget(InRenderTarget)
 	{
 	}
 };
@@ -81,21 +82,43 @@ class SHADERPLUGIN_API FShaderUsageExample
 public:
 
 public:
-	FShaderUsageExample();
+	/********************************************************************************************************/
+	/* We can use two different strategies when we want to render something.                                */
+	/* Active: We can either set it up in an "active" fashion, where we need to call a function to execute  */
+	/* rendering code. This is useful when we only need to render something now and then.                   */
+	/* When using this class with the "active" strategy, we need to call Draw() every frame we want to draw.*/
+	/*                                                                                                      */
+	/* Passive: We can also simply register to render every frame. This is obviously useful when you need   */
+	/* to render something that changes every frame.                                                        */
+	/* To use this class with the "passive" strategy, we need to call SetParameters() every time we have    */
+	/* updated data.                                                                                        */
+	/********************************************************************************************************/
+	FShaderUsageExample(bool bRenderEveryFrame, FIntPoint InTextureSize);
 	~FShaderUsageExample();
 
 	/********************************************************************************************************/
-	/* Let the user change rendertarget during runtime if they want to :D                                   */
-	/* @param RenderTarget - This is the output rendertarget!                                               */
-	/* @param InputTexture - This is a rendertarget that's used as a texture parameter to the shader :)     */
-	/* @param EndColor - This will be set to the dynamic parameter buffer each frame                        */
-	/* @param TextureParameterBlendFactor - The scalar weight that decides how much of the texture to blend */
+	/* You need to call this function every time you want to draw something if you are using the "active"   */
+	/* strategy.                                                                                            */
 	/********************************************************************************************************/
 	void Draw(FShaderUsageExampleParameters& DrawParameters);
 
+	/********************************************************************************************************/
+	/* You need to call this function every time you want to update your parameters if you are using the    */
+	/* "passive" strategy.                                                                                  */
+	/********************************************************************************************************/
+	void UpdateParameters(FShaderUsageExampleParameters& DrawParameters);
+
 private:
+	TRefCountPtr<IPooledRenderTarget> RenderTarget;
+	FShaderUsageExampleParameters CachedShaderUsageExampleParameters;
+	FDelegateHandle OnPostResolvedSceneColorHandle; 
+	FCriticalSection RenderEveryFrameLock;
+	FIntPoint TextureSize;
 	volatile bool bIsShaderExecuting;
-	
+	volatile bool bCachedParametersValid;
+	bool bIsRenderingEveryFrame;
+
+	void DrawEveryFrame_RenderThread(FRHICommandListImmediate& RHICmdList, class FSceneRenderTargets& SceneContext);
 	void Draw_RenderThread(const FShaderUsageExampleParameters& DrawParameters);
 	void SaveCSScreenshot_RenderThread(FRHICommandListImmediate& RHICmdList, FRHITexture2D* Texture);
 	void SavePSScreenShot_RenderThread(FRHICommandListImmediate& RHICmdList, FTexture2DRHIRef CurrentTexture);

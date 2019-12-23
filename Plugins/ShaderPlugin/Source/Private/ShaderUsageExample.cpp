@@ -30,27 +30,63 @@
 #include "GlobalShader.h"
 #include "RHICommandList.h"
 #include "RenderGraphBuilder.h"
+#include "RenderTargetPool.h"
 #include "Runtime/Core/Public/Misc/FileHelper.h"
 #include "Runtime/Engine/Classes/Engine/TextureRenderTarget2D.h"
+#include "Runtime/Core/Public/Modules/ModuleManager.h"
 
-FShaderUsageExample::FShaderUsageExample()
-	: bIsShaderExecuting(false)
+FShaderUsageExample::FShaderUsageExample(bool bRenderEveryFrame, FIntPoint InTextureSize)
+	: RenderEveryFrameLock()
+	, TextureSize(InTextureSize)
+	, bIsShaderExecuting(false)
+	, bCachedParametersValid(false)
+	, bIsRenderingEveryFrame(bRenderEveryFrame)
 {
+	if (bIsRenderingEveryFrame)
+	{
+		const FName RendererModuleName("Renderer");
+		IRendererModule* RendererModule = FModuleManager::GetModulePtr<IRendererModule>(RendererModuleName);
+		if (RendererModule)
+		{
+			OnPostResolvedSceneColorHandle = RendererModule->GetResolvedSceneColorCallbacks().AddRaw(this, &FShaderUsageExample::DrawEveryFrame_RenderThread);
+		}
+	}
 }
 
 FShaderUsageExample::~FShaderUsageExample()
 {
+	if (bIsRenderingEveryFrame)
+	{
+		const FName RendererModuleName("Renderer");
+		IRendererModule* RendererModule = FModuleManager::GetModulePtr<IRendererModule>(RendererModuleName);
+		if (RendererModule)
+		{
+			RendererModule->GetResolvedSceneColorCallbacks().Remove(OnPostResolvedSceneColorHandle);
+		}
+	}
+}
+
+void FShaderUsageExample::UpdateParameters(FShaderUsageExampleParameters& DrawParameters)
+{
+	checkf(bIsRenderingEveryFrame, TEXT("Don't call this function if you are not aiming to render every frame! Call Draw() instead."));
+
+	RenderEveryFrameLock.Lock();
+	CachedShaderUsageExampleParameters = DrawParameters;
+	bCachedParametersValid = true;
+	RenderEveryFrameLock.Unlock();
 }
 
 void FShaderUsageExample::Draw(FShaderUsageExampleParameters& DrawParameters)
 {
+	checkf(!bIsRenderingEveryFrame, TEXT("Don't call this function if you are aiming to render every frame! Call UpdateParameters() instead."));
+	
 	if (bIsShaderExecuting) // Skip this execution round if we are already executing
 	{
 		return;
 	}
-
+	
 	bIsShaderExecuting = true;
-
+	
 	// This macro sends the function we declare inside to be run on the render thread. 
 	// What we do is essentially just send this class and tell the render thread to run the render function as soon as it can.
 	// The renderer will check periodically during its execution if there are any queued functions to run.
@@ -61,27 +97,50 @@ void FShaderUsageExample::Draw(FShaderUsageExampleParameters& DrawParameters)
 	});
 }
 
+void FShaderUsageExample::DrawEveryFrame_RenderThread(FRHICommandListImmediate& RHICmdList, class FSceneRenderTargets& SceneContext)
+{
+	// Just forward to our main draw function
+	if (bIsRenderingEveryFrame && bCachedParametersValid)
+	{
+		// Depending on your data, you might not have to lock here, just added this code to show how you can do it if you have to.
+		RenderEveryFrameLock.Lock();
+		FShaderUsageExampleParameters Copy = CachedShaderUsageExampleParameters;
+		RenderEveryFrameLock.Unlock();
+
+		Draw_RenderThread(Copy);
+	}
+}
+
 void FShaderUsageExample::Draw_RenderThread(const FShaderUsageExampleParameters& DrawParameters)
 {
 	check(IsInRenderingThread());
 	
-	FShaderUsageExampleResources Resources;
-
 	FRHICommandListImmediate& RHICmdList = GRHICommandList.GetImmediateCommandList();
-	FRDGBuilder GraphBuilder(RHICmdList);
+
+	if (!RenderTarget.IsValid())
+	{
+		FPooledRenderTargetDesc RenderTargetDesc = FPooledRenderTargetDesc::Create2DDesc(TextureSize, 
+			PF_R8G8B8A8, FClearValueBinding::Black, TexCreate_None, TexCreate_RenderTargetable, false);
 		
-	FComputeShaderExample::AddPass_RenderThread(GraphBuilder, DrawParameters, Resources);
+		GRenderTargetPool.FindFreeElement(RHICmdList, RenderTargetDesc, RenderTarget, TEXT("ShaderPlugin_Output"));
+	}
+
+	FRDGBuilder GraphBuilder(RHICmdList);
+
+	FShaderUsageExampleResources DrawResources(RenderTarget);
+	FComputeShaderExample::AddPass_RenderThread(GraphBuilder, DrawParameters, DrawResources);
+	FPixelShaderExample::AddPass_RenderThread(GraphBuilder, DrawParameters, DrawResources);
 
 	GraphBuilder.Execute();
 	
 	if (DrawParameters.bSaveComputeShaderOutput)
 	{
-		SaveCSScreenshot_RenderThread(RHICmdList, (FRHITexture2D*)Resources.ComputeShaderOutput->GetRHI());
+		SaveCSScreenshot_RenderThread(RHICmdList, (FRHITexture2D*)DrawResources.ComputeShaderOutput->GetRHI());
 	}
 
-	if (DrawParameters.bSavePixelShaderOutput && DrawParameters.RenderTarget)
+	if (DrawParameters.bSavePixelShaderOutput && RenderTarget.IsValid())
 	{
-		SavePSScreenShot_RenderThread(RHICmdList, DrawParameters.RenderTarget->GetRenderTargetResource()->GetRenderTargetTexture());
+		SavePSScreenShot_RenderThread(RHICmdList, RenderTarget->GetRenderTargetItem().TargetableTexture->GetTexture2D());
 	}
 
 	bIsShaderExecuting = false;

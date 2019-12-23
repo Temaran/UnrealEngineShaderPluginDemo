@@ -29,6 +29,7 @@
 #include "GlobalShader.h"
 #include "RenderGraphBuilder.h"
 #include "RenderGraphUtils.h"
+#include "ShaderParameterMacros.h"
 #include "ShaderParameterStruct.h"
 #include "UniformBuffer.h"
 #include "RHICommandList.h"
@@ -102,7 +103,8 @@ public:
 
 	// Here we declare the layout of our parameter struct that we're going to use.
 	BEGIN_SHADER_PARAMETER_STRUCT(FParameters, )
-		SHADER_PARAMETER_SRV(Texture2D<uint>, ComputeShaderOutput)
+		RENDER_TARGET_BINDING_SLOTS()
+		SHADER_PARAMETER_RDG_TEXTURE_SRV(Texture2D<uint>, ComputeShaderOutput)
 		SHADER_PARAMETER(FVector4, StartColor)
 		SHADER_PARAMETER(FVector4, EndColor)
 		SHADER_PARAMETER(float, BlendFactor)
@@ -125,35 +127,23 @@ IMPLEMENT_GLOBAL_SHADER(FPixelShaderExamplePS, "/Plugin/ShaderPlugin/Private/Pix
 
 void FPixelShaderExample::AddPass_RenderThread(FRDGBuilder& GraphBuilder, const FShaderUsageExampleParameters& DrawParameters, FShaderUsageExampleResources& DrawResources)
 {
-	if (!DrawParameters.RenderTarget)
-	{
-		return;
-	}
-	   
 	FPixelShaderExamplePS::FParameters* Parameters = GraphBuilder.AllocParameters<FPixelShaderExamplePS::FParameters>();
-	Parameters->ComputeShaderOutput = GraphBuilder.CreateSRV(FRDGTextureSRVDesc::Create(DrawResources.ComputeShaderOutput))->GetRHI();
+	Parameters->ComputeShaderOutput = GraphBuilder.CreateSRV(FRDGTextureSRVDesc::Create(DrawResources.ComputeShaderOutput));
 	Parameters->StartColor = FVector4(DrawParameters.StartColor.R, DrawParameters.StartColor.G, DrawParameters.StartColor.B, DrawParameters.StartColor.A);
 	Parameters->EndColor = FVector4(DrawParameters.EndColor.R, DrawParameters.EndColor.G, DrawParameters.EndColor.B, DrawParameters.EndColor.A);
 	Parameters->BlendFactor = DrawParameters.ComputeShaderBlend;
+	Parameters->RenderTargets[0] = FRenderTargetBinding(GraphBuilder.RegisterExternalTexture(DrawResources.RenderTarget), ERenderTargetLoadAction::EClear);
 
 	GraphBuilder.AddPass(RDG_EVENT_NAME("ShaderPlugin PixelShaderExample"),	Parameters,	ERDGPassFlags::Raster, 
-	[Parameters, DrawParameters](FRHICommandList& RHICmdList)
+	[Parameters, DrawParameters, DrawResources](FRHICommandList& RHICmdList)
 	{
-		// This is where the magic happens
-		FTexture2DRHIRef CurrentTexture = DrawParameters.RenderTarget->GetRenderTargetResource()->GetRenderTargetTexture();
-		FRHIRenderPassInfo RPInfo(CurrentTexture, ERenderTargetActions::Load_Store);
-
-		RHICmdList.BeginRenderPass(RPInfo, TEXT("ShaderPlugin: Draw compute shader output to render target"));
-
 		TShaderMapRef<FSimplePassThroughVS> VertexShader(GetGlobalShaderMap(DrawParameters.ShaderFeatureLevel));
 		TShaderMapRef<FPixelShaderExamplePS> PixelShader(GetGlobalShaderMap(DrawParameters.ShaderFeatureLevel));
-
+		
 		SetShaderParameters(RHICmdList, *PixelShader, PixelShader->GetPixelShader(), *Parameters);
 
 		// Set the graphic pipeline state.
 		FGraphicsPipelineStateInitializer GraphicsPSOInit;
-		RHICmdList.ApplyCachedRenderTargets(GraphicsPSOInit);
-
 		GraphicsPSOInit.DepthStencilState = TStaticDepthStencilState<false, CF_Never>::GetRHI();
 		GraphicsPSOInit.BlendState = TStaticBlendState<>::GetRHI();
 		GraphicsPSOInit.RasterizerState = TStaticRasterizerState<>::GetRHI();
@@ -166,6 +156,14 @@ void FPixelShaderExample::AddPass_RenderThread(FRDGBuilder& GraphBuilder, const 
 
 		FPixelShaderUtils::DrawFullscreenQuad(RHICmdList, 1);
 
-		RHICmdList.EndRenderPass();
+		if (DrawParameters.RenderTarget)
+		{
+			// Here we copy our output from our IPooledRenderTarget to our render target.
+			// It would be more effective to simply draw to the render target with out pixel shader, but I do a resource copy here to provide it as an example.
+			// Also, if we wanted to draw with the pixel shader, we would have to create our own draw pass using RHICmdList.BeginRenderPass().
+			// This is because the Graph builder system can only work on IPooledRenderTargets.
+			//RHICmdList.CopyTexture(DrawResources.RenderTarget->GetRenderTargetItem().TargetableTexture
+			//	, DrawParameters.RenderTarget->GetRenderTargetResource()->TextureRHI, FRHICopyTextureInfo());
+		}
 	});
 }

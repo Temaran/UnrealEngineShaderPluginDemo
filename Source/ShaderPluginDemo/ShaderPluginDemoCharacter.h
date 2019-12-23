@@ -111,6 +111,7 @@ private:
 	float TotalElapsedTime;
 	bool bSaveComputeShaderOutput;
 	bool bSavePixelShaderOutput;
+	bool bRenderEveryFrame;
 
 	void ModifyComputeShaderBlend(float NewScalar);
 	void SavePixelShaderOutput();

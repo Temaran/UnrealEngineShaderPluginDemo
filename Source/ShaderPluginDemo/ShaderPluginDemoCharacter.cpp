@@ -32,6 +32,11 @@
 #include "Kismet/GameplayStatics.h"
 #include "Runtime/Engine/Classes/Materials/MaterialInstanceDynamic.h"
 
+// TODO:
+// Shader lifetime. We probably need to hook up the render callback in the plugin module for more stability.
+// Getting the output into a rendertarget with new pipeline
+// Super annoying with the shaders not being recompiled
+
 AShaderPluginDemoCharacter::AShaderPluginDemoCharacter() 
 {
 	GetCapsuleComponent()->InitCapsuleSize(55.f, 96.0f);
@@ -64,7 +69,11 @@ AShaderPluginDemoCharacter::AShaderPluginDemoCharacter()
 
 	GunOffset = FVector(100.0f, 0.0f, 10.0f);
 
-	ShaderUsageExample = new FShaderUsageExample();
+	// If this is set to true, we will draw every frame, and we should call UpdateParameters() when we need to.
+	// If this is false, we should call Draw() every time we want to draw.
+	bRenderEveryFrame = true;
+
+	ShaderUsageExample = new FShaderUsageExample(bRenderEveryFrame, FIntPoint(1024, 1024));
 	EndColorBuildup = 0;
 	EndColorBuildupDirection = 1;
 	PixelShaderTopLeftColor = FColor::Green;
@@ -86,10 +95,10 @@ void AShaderPluginDemoCharacter::BeginDestroy()
 {
 	Super::BeginDestroy();
 
-	if (ShaderUsageExample)
-	{
-		delete ShaderUsageExample;
-	}
+// 	if (ShaderUsageExample)
+// 	{
+// 		delete ShaderUsageExample;
+// 	}
 }
 
 void AShaderPluginDemoCharacter::SavePixelShaderOutput() 
@@ -112,10 +121,6 @@ void AShaderPluginDemoCharacter::Tick(float DeltaSeconds)
 
 	TotalElapsedTime += DeltaSeconds;
 
-	// Be aware that this will only render in the game tick framerate. 
-	// If you need to render in the game's framerate, it might be better to set a hook to the renderer instead.
-	// See RendererModule.h for which hooks are available. If you're not sure which one you should use, go for this one:
-	// void RegisterPostOpaqueRenderDelegate(const FPostOpaqueRenderDelegate& PostOpaqueRenderDelegate)
 	if (ShaderUsageExample)
 	{
 		EndColorBuildup = FMath::Clamp(EndColorBuildup + DeltaSeconds * EndColorBuildupDirection, 0.0f, 1.0f);
@@ -126,7 +131,7 @@ void AShaderPluginDemoCharacter::Tick(float DeltaSeconds)
 		
 		ComputeShaderBlend = FMath::Clamp(ComputeShaderBlend + ComputeShaderBlendScalar * DeltaSeconds, 0.0f, 1.0f);
 
-		FShaderUsageExampleParameters DrawParameters(GetWorld()->Scene->GetFeatureLevel(), *RenderTarget, DeltaSeconds, TotalElapsedTime);
+		FShaderUsageExampleParameters DrawParameters(GetWorld()->Scene->GetFeatureLevel(), RenderTarget, DeltaSeconds, TotalElapsedTime);
 		DrawParameters.SimulationSpeed = ComputeShaderSimulationSpeed;
 		DrawParameters.ComputeShaderBlend = ComputeShaderBlend;
 		DrawParameters.bSaveComputeShaderOutput = bSaveComputeShaderOutput;
@@ -134,7 +139,15 @@ void AShaderPluginDemoCharacter::Tick(float DeltaSeconds)
 		DrawParameters.StartColor = PixelShaderTopLeftColor;
 		DrawParameters.EndColor = FColor(EndColorBuildup * 255, 0, 0, 255);
 
-		ShaderUsageExample->Draw(DrawParameters);
+		if (bRenderEveryFrame)
+		{
+			// If doing this for realsies, you should avoid doing this every frame unless you have to of course.
+			ShaderUsageExample->UpdateParameters(DrawParameters);
+		}
+		else
+		{
+			ShaderUsageExample->Draw(DrawParameters);
+		}
 	}
 
 	bSavePixelShaderOutput = false;
