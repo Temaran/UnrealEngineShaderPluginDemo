@@ -125,45 +125,45 @@ IMPLEMENT_SHADER_TYPE(, FSimplePassThroughVS, TEXT("/Plugin/ShaderPlugin/Private
 //                           ShaderType                            ShaderPath                      Shader function name    Type
 IMPLEMENT_GLOBAL_SHADER(FPixelShaderExamplePS, "/Plugin/ShaderPlugin/Private/PixelShader.usf", "MainPixelShader", SF_Pixel);
 
-void FPixelShaderExample::AddPass_RenderThread(FRDGBuilder& GraphBuilder, const FShaderUsageExampleParameters& DrawParameters, FShaderUsageExampleResources& DrawResources)
+void FPixelShaderExample::AddPass_RenderThread(FRDGBuilder& GraphBuilder, const FShaderUsageExampleParameters& DrawParameters, FRDGTextureRef& ComputeShaderOutput)
 {
-	FPixelShaderExamplePS::FParameters* Parameters = GraphBuilder.AllocParameters<FPixelShaderExamplePS::FParameters>();
-	Parameters->ComputeShaderOutput = GraphBuilder.CreateSRV(FRDGTextureSRVDesc::Create(DrawResources.ComputeShaderOutput));
-	Parameters->StartColor = FVector4(DrawParameters.StartColor.R, DrawParameters.StartColor.G, DrawParameters.StartColor.B, DrawParameters.StartColor.A);
-	Parameters->EndColor = FVector4(DrawParameters.EndColor.R, DrawParameters.EndColor.G, DrawParameters.EndColor.B, DrawParameters.EndColor.A);
-	Parameters->BlendFactor = DrawParameters.ComputeShaderBlend;
-	Parameters->RenderTargets[0] = FRenderTargetBinding(GraphBuilder.RegisterExternalTexture(DrawResources.RenderTarget), ERenderTargetLoadAction::EClear);
-
-	GraphBuilder.AddPass(RDG_EVENT_NAME("ShaderPlugin PixelShaderExample"),	Parameters,	ERDGPassFlags::Raster, 
-	[Parameters, DrawParameters, DrawResources](FRHICommandList& RHICmdList)
-	{
-		TShaderMapRef<FSimplePassThroughVS> VertexShader(GetGlobalShaderMap(DrawParameters.ShaderFeatureLevel));
-		TShaderMapRef<FPixelShaderExamplePS> PixelShader(GetGlobalShaderMap(DrawParameters.ShaderFeatureLevel));
-		
-		SetShaderParameters(RHICmdList, *PixelShader, PixelShader->GetPixelShader(), *Parameters);
-
-		// Set the graphic pipeline state.
-		FGraphicsPipelineStateInitializer GraphicsPSOInit;
-		GraphicsPSOInit.DepthStencilState = TStaticDepthStencilState<false, CF_Never>::GetRHI();
-		GraphicsPSOInit.BlendState = TStaticBlendState<>::GetRHI();
-		GraphicsPSOInit.RasterizerState = TStaticRasterizerState<>::GetRHI();
-		GraphicsPSOInit.BoundShaderState.VertexDeclarationRHI = GTextureVertexDeclaration.VertexDeclarationRHI;
-		GraphicsPSOInit.BoundShaderState.VertexShaderRHI = GETSAFERHISHADER_VERTEX(*VertexShader);
-		GraphicsPSOInit.BoundShaderState.PixelShaderRHI = GETSAFERHISHADER_PIXEL(*PixelShader);
-		GraphicsPSOInit.PrimitiveType = PT_TriangleList;
-		
-		SetGraphicsPipelineState(RHICmdList, GraphicsPSOInit);
-
-		FPixelShaderUtils::DrawFullscreenQuad(RHICmdList, 1);
-
-		if (DrawParameters.RenderTarget)
-		{
-			// Here we copy our output from our IPooledRenderTarget to our render target.
-			// It would be more effective to simply draw to the render target with out pixel shader, but I do a resource copy here to provide it as an example.
-			// Also, if we wanted to draw with the pixel shader, we would have to create our own draw pass using RHICmdList.BeginRenderPass().
-			// This is because the Graph builder system can only work on IPooledRenderTargets.
-			//RHICmdList.CopyTexture(DrawResources.RenderTarget->GetRenderTargetItem().TargetableTexture
-			//	, DrawParameters.RenderTarget->GetRenderTargetResource()->TextureRHI, FRHICopyTextureInfo());
-		}
-	});
+// 	FPixelShaderExamplePS::FParameters* Parameters = GraphBuilder.AllocParameters<FPixelShaderExamplePS::FParameters>();
+// 	Parameters->ComputeShaderOutput = GraphBuilder.CreateSRV(FRDGTextureSRVDesc::Create(ComputeShaderOutput));
+// 	Parameters->StartColor = FVector4(DrawParameters.StartColor.R, DrawParameters.StartColor.G, DrawParameters.StartColor.B, DrawParameters.StartColor.A);
+// 	Parameters->EndColor = FVector4(DrawParameters.EndColor.R, DrawParameters.EndColor.G, DrawParameters.EndColor.B, DrawParameters.EndColor.A);
+// 	Parameters->BlendFactor = DrawParameters.ComputeShaderBlend;
+// 	Parameters->RenderTargets[0] = FRenderTargetBinding(GraphBuilder.RegisterExternalTexture(DrawParameters.RenderTarget), ERenderTargetLoadAction::EClear);
+// 
+// 	GraphBuilder.AddPass(RDG_EVENT_NAME("ShaderPlugin PixelShaderExample"),	Parameters,	ERDGPassFlags::Raster, 
+// 	[Parameters, DrawParameters, DrawResources](FRHICommandList& RHICmdList)
+// 	{
+// 		TShaderMapRef<FSimplePassThroughVS> VertexShader(GetGlobalShaderMap(DrawParameters.ShaderFeatureLevel));
+// 		TShaderMapRef<FPixelShaderExamplePS> PixelShader(GetGlobalShaderMap(DrawParameters.ShaderFeatureLevel));
+// 		
+// 		SetShaderParameters(RHICmdList, *PixelShader, PixelShader->GetPixelShader(), *Parameters);
+// 
+// 		// Set the graphic pipeline state.
+// 		FGraphicsPipelineStateInitializer GraphicsPSOInit;
+// 		GraphicsPSOInit.DepthStencilState = TStaticDepthStencilState<false, CF_Never>::GetRHI();
+// 		GraphicsPSOInit.BlendState = TStaticBlendState<>::GetRHI();
+// 		GraphicsPSOInit.RasterizerState = TStaticRasterizerState<>::GetRHI();
+// 		GraphicsPSOInit.BoundShaderState.VertexDeclarationRHI = GTextureVertexDeclaration.VertexDeclarationRHI;
+// 		GraphicsPSOInit.BoundShaderState.VertexShaderRHI = GETSAFERHISHADER_VERTEX(*VertexShader);
+// 		GraphicsPSOInit.BoundShaderState.PixelShaderRHI = GETSAFERHISHADER_PIXEL(*PixelShader);
+// 		GraphicsPSOInit.PrimitiveType = PT_TriangleList;
+// 		
+// 		SetGraphicsPipelineState(RHICmdList, GraphicsPSOInit);
+// 
+// 		FPixelShaderUtils::DrawFullscreenQuad(RHICmdList, 1);
+// 
+// 		if (DrawParameters.RenderTarget)
+// 		{
+// 			// Here we copy our output from our IPooledRenderTarget to our render target.
+// 			// It would be more effective to simply draw to the render target with out pixel shader, but I do a resource copy here to provide it as an example.
+// 			// Also, if we wanted to draw with the pixel shader, we would have to create our own draw pass using RHICmdList.BeginRenderPass().
+// 			// This is because the Graph builder system can only work on IPooledRenderTargets.
+// 			//RHICmdList.CopyTexture(DrawResources.RenderTarget->GetRenderTargetItem().TargetableTexture
+// 			//	, DrawParameters.RenderTarget->GetRenderTargetResource()->TextureRHI, FRHICopyTextureInfo());
+// 		}
+// 	});
 }

@@ -68,23 +68,23 @@ public:
 //                            ShaderType                            ShaderPath                     Shader function name    Type
 IMPLEMENT_GLOBAL_SHADER(FComputeShaderExampleCS, "/Plugin/ShaderPlugin/Private/ComputeShader.usf", "MainComputeShader", SF_Compute);
 
-void FComputeShaderExample::AddPass_RenderThread(FRDGBuilder& GraphBuilder, const FShaderUsageExampleParameters& DrawParameters, FShaderUsageExampleResources& DrawResources)
+void FComputeShaderExample::AddPass_RenderThread(FRDGBuilder& GraphBuilder, const FShaderUsageExampleParameters& DrawParameters, FRDGTextureRef& ComputeShaderOutput)
 {
-	FIntVector TextureExtent = DrawResources.RenderTarget->GetDesc().GetSize();
+	FIntPoint TextureExtent(DrawParameters.RenderTarget->SizeX, DrawParameters.RenderTarget->SizeY);
 
 	FRDGTextureDesc Desc;
-	Desc.Extent = FIntPoint(TextureExtent.X, TextureExtent.Y);
+	Desc.Extent = TextureExtent;
 	Desc.Format = PF_R32_UINT;
 	Desc.NumMips = 1;
 	Desc.NumSamples = 1;
 	Desc.TargetableFlags = TexCreate_ShaderResource | TexCreate_UAV;
 	Desc.DebugName = TEXT("ShaderPlugin_ComputeShaderOutput");
-	DrawResources.ComputeShaderOutput = GraphBuilder.CreateTexture(Desc, TEXT("ShaderPlugin_ComputeShaderOutputTexture"), ERDGResourceFlags::None);
+	ComputeShaderOutput = GraphBuilder.CreateTexture(Desc, TEXT("ShaderPlugin_ComputeShaderOutputTexture"), ERDGResourceFlags::None);
 
 	FComputeShaderExampleCS::FParameters* Parameters = GraphBuilder.AllocParameters<FComputeShaderExampleCS::FParameters>();
 	Parameters->SimulationSpeed = DrawParameters.SimulationSpeed;
 	Parameters->TotalTimeElapsedSeconds = DrawParameters.TotalElapsedTimeSecs;
-	Parameters->OutputTexture = GraphBuilder.CreateUAV(DrawResources.ComputeShaderOutput);
+	Parameters->OutputTexture = GraphBuilder.CreateUAV(ComputeShaderOutput);
 
 	// We can use this util here to make it a bit easier to setup the compute shader pass
 	TShaderMapRef<FComputeShaderExampleCS> ComputeShader(GetGlobalShaderMap(DrawParameters.ShaderFeatureLevel));

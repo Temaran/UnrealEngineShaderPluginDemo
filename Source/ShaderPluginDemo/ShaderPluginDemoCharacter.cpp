@@ -24,6 +24,8 @@
 
 #include "ShaderPluginDemoCharacter.h"
 
+#include "ShaderPluginModule.h"
+
 #include "Animation/AnimInstance.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
@@ -31,11 +33,6 @@
 #include "GameFramework/InputSettings.h"
 #include "Kismet/GameplayStatics.h"
 #include "Runtime/Engine/Classes/Materials/MaterialInstanceDynamic.h"
-
-// TODO:
-// Shader lifetime. We probably need to hook up the render callback in the plugin module for more stability.
-// Getting the output into a rendertarget with new pipeline
-// Super annoying with the shaders not being recompiled
 
 AShaderPluginDemoCharacter::AShaderPluginDemoCharacter() 
 {
@@ -69,11 +66,6 @@ AShaderPluginDemoCharacter::AShaderPluginDemoCharacter()
 
 	GunOffset = FVector(100.0f, 0.0f, 10.0f);
 
-	// If this is set to true, we will draw every frame, and we should call UpdateParameters() when we need to.
-	// If this is false, we should call Draw() every time we want to draw.
-	bRenderEveryFrame = true;
-
-	ShaderUsageExample = new FShaderUsageExample(bRenderEveryFrame, FIntPoint(1024, 1024));
 	EndColorBuildup = 0;
 	EndColorBuildupDirection = 1;
 	PixelShaderTopLeftColor = FColor::Green;
@@ -89,16 +81,13 @@ void AShaderPluginDemoCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 	FP_Gun->AttachToComponent(Mesh1P, FAttachmentTransformRules::SnapToTargetIncludingScale, TEXT("GripPoint"));
+	FShaderPluginModule::Get().BeginRendering();
 }
 
 void AShaderPluginDemoCharacter::BeginDestroy() 
 {
+	FShaderPluginModule::Get().EndRendering();
 	Super::BeginDestroy();
-
-// 	if (ShaderUsageExample)
-// 	{
-// 		delete ShaderUsageExample;
-// 	}
 }
 
 void AShaderPluginDemoCharacter::SavePixelShaderOutput() 
@@ -121,34 +110,24 @@ void AShaderPluginDemoCharacter::Tick(float DeltaSeconds)
 
 	TotalElapsedTime += DeltaSeconds;
 
-	if (ShaderUsageExample)
+	EndColorBuildup = FMath::Clamp(EndColorBuildup + DeltaSeconds * EndColorBuildupDirection, 0.0f, 1.0f);
+	if (EndColorBuildup >= 1.0 || EndColorBuildup <= 0) 
 	{
-		EndColorBuildup = FMath::Clamp(EndColorBuildup + DeltaSeconds * EndColorBuildupDirection, 0.0f, 1.0f);
-		if (EndColorBuildup >= 1.0 || EndColorBuildup <= 0) 
-		{
-			EndColorBuildupDirection *= -1;
-		}
-		
-		ComputeShaderBlend = FMath::Clamp(ComputeShaderBlend + ComputeShaderBlendScalar * DeltaSeconds, 0.0f, 1.0f);
-
-		FShaderUsageExampleParameters DrawParameters(GetWorld()->Scene->GetFeatureLevel(), RenderTarget, DeltaSeconds, TotalElapsedTime);
-		DrawParameters.SimulationSpeed = ComputeShaderSimulationSpeed;
-		DrawParameters.ComputeShaderBlend = ComputeShaderBlend;
-		DrawParameters.bSaveComputeShaderOutput = bSaveComputeShaderOutput;
-		DrawParameters.bSavePixelShaderOutput = bSavePixelShaderOutput;
-		DrawParameters.StartColor = PixelShaderTopLeftColor;
-		DrawParameters.EndColor = FColor(EndColorBuildup * 255, 0, 0, 255);
-
-		if (bRenderEveryFrame)
-		{
-			// If doing this for realsies, you should avoid doing this every frame unless you have to of course.
-			ShaderUsageExample->UpdateParameters(DrawParameters);
-		}
-		else
-		{
-			ShaderUsageExample->Draw(DrawParameters);
-		}
+		EndColorBuildupDirection *= -1;
 	}
+		
+	ComputeShaderBlend = FMath::Clamp(ComputeShaderBlend + ComputeShaderBlendScalar * DeltaSeconds, 0.0f, 1.0f);
+
+	FShaderUsageExampleParameters DrawParameters(GetWorld()->Scene->GetFeatureLevel(), RenderTarget, DeltaSeconds, TotalElapsedTime);
+	DrawParameters.SimulationSpeed = ComputeShaderSimulationSpeed;
+	DrawParameters.ComputeShaderBlend = ComputeShaderBlend;
+	DrawParameters.bSaveComputeShaderOutput = bSaveComputeShaderOutput;
+	DrawParameters.bSavePixelShaderOutput = bSavePixelShaderOutput;
+	DrawParameters.StartColor = PixelShaderTopLeftColor;
+	DrawParameters.EndColor = FColor(EndColorBuildup * 255, 0, 0, 255);
+
+	// If doing this for realsies, you should avoid doing this every frame unless you have to of course.
+	FShaderPluginModule::Get().UpdateParameters(DrawParameters);
 
 	bSavePixelShaderOutput = false;
 	bSaveComputeShaderOutput = false;

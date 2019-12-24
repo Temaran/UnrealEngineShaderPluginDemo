@@ -27,7 +27,6 @@
 #include "CoreMinimal.h"
 
 #include "GameFramework/Character.h"
-#include "ShaderUsageExample.h"
 #include "ShaderPluginDemoCharacter.generated.h"
 
 class UInputComponent;
@@ -102,8 +101,6 @@ public:
 	FORCEINLINE class UCameraComponent* GetFirstPersonCameraComponent() const { return FirstPersonCameraComponent; }
 
 private:
-	FShaderUsageExample* ShaderUsageExample;
-
 	float EndColorBuildup;
 	float EndColorBuildupDirection;
 	float ComputeShaderBlendScalar;
@@ -111,7 +108,6 @@ private:
 	float TotalElapsedTime;
 	bool bSaveComputeShaderOutput;
 	bool bSavePixelShaderOutput;
-	bool bRenderEveryFrame;
 
 	void ModifyComputeShaderBlend(float NewScalar);
 	void SavePixelShaderOutput();

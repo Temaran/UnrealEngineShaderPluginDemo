@@ -25,7 +25,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "ShaderUsageExample.h"
+#include "ShaderPluginModule.h"
 
 /**************************************************************************************/
 /* This is just an interface we use to keep all the pixel shading code in one file.   */
@@ -33,5 +33,5 @@
 class FPixelShaderExample
 {
 public:
-	static void AddPass_RenderThread(FRDGBuilder& GraphBuilder, const FShaderUsageExampleParameters& DrawParameters, FShaderUsageExampleResources& DrawResources);
+	static void AddPass_RenderThread(FRDGBuilder& GraphBuilder, const FShaderUsageExampleParameters& DrawParameters, FRDGTextureRef& ComputeShaderOutput);
 };
