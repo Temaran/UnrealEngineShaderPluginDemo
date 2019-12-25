@@ -69,7 +69,7 @@ public:
 	/************************************************************************/
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = ShaderDemo)
-	FColor PixelShaderTopLeftColor;
+	FColor StartColor;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = ShaderDemo)
 	float ComputeShaderSimulationSpeed;
@@ -105,12 +105,8 @@ private:
 	float EndColorBuildupDirection;
 	float ComputeShaderBlendScalar;
 	float ComputeShaderBlend;
-	float TotalElapsedTime;
-	bool bSaveComputeShaderOutput;
-	bool bSavePixelShaderOutput;
+	float TotalTimeSecs;
 
 	void ModifyComputeShaderBlend(float NewScalar);
-	void SavePixelShaderOutput();
-	void SaveComputeShaderOutput();
 };
 

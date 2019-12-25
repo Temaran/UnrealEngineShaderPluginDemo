@@ -30,6 +30,7 @@
 #include "Modules/ModuleManager.h"
 
 #include "RenderGraphResources.h"
+#include "Runtime/Engine/Classes/Engine/TextureRenderTarget2D.h"
 
 // This struct contains all the data we need to pass from the game thread to draw our effect.
 struct FShaderUsageExampleParameters
@@ -37,25 +38,26 @@ struct FShaderUsageExampleParameters
 	UTextureRenderTarget2D* RenderTarget;
 	FColor StartColor;
 	FColor EndColor;
-	float SimulationSpeed;
+	float SimulationState;
 	float ComputeShaderBlend;
-	float DeltaTimeSecs;
-	float TotalElapsedTimeSecs;
-	bool bSaveComputeShaderOutput;
-	bool bSavePixelShaderOutput;
+	
+	FIntPoint GetRenderTargetSize() const
+	{
+		return CachedRenderTargetSize;
+	}
 
-	FShaderUsageExampleParameters() { }
-	FShaderUsageExampleParameters(UTextureRenderTarget2D* InRenderTarget, float InDeltaTimeSeconds, float InTotalTimeSeconds)
+	FShaderUsageExampleParameters()	{ }
+	FShaderUsageExampleParameters(UTextureRenderTarget2D* InRenderTarget)
 		: RenderTarget(InRenderTarget)
 		, StartColor(FColor::White)
 		, EndColor(FColor::White)
-		, SimulationSpeed(1.0f)
-		, DeltaTimeSecs(InDeltaTimeSeconds)
-		, TotalElapsedTimeSecs(InTotalTimeSeconds)
-		, bSaveComputeShaderOutput(false)
-		, bSavePixelShaderOutput(false)
+		, SimulationState(1.0f)
 	{
+		CachedRenderTargetSize = RenderTarget ? FIntPoint(RenderTarget->SizeX, RenderTarget->SizeY) : FIntPoint::ZeroValue;
 	}
+
+private:
+	FIntPoint CachedRenderTargetSize;
 };
 
 /*
@@ -75,8 +77,9 @@ struct FShaderUsageExampleParameters
  * Graphs generally perform better if you use them for larger jobs. For smaller work, you yet again want to look at passes instead.
  *
  * Render passes:
- * Passes are very similar to the previous graphics API. Instead of using the RHI command list to for example set render
- * targets though, you wrap this information into a pass instead.
+ * Passes are very similar to the previous graphics API and are now used when using the rasterizer. 
+ * Instead of setting the render target for a rasterization operation, you now set that up when beginning a render pass instead.
+ * Operations that don't use the rasterizer (like compute, copy and other operations) simply use the RHICommandList directly like before.
  *
  * There are of course many resources you can leverage to get a better understanding of the new API. A good initial overview
  * can be found in this presentation:
@@ -100,8 +103,14 @@ public:
 	virtual void ShutdownModule() override;
 
 public:
+	// Call this when you want to hook onto the renderer and start drawing. The shader will be executed once per frame.
 	void BeginRendering();
+
+	// When you are done, call this to stop drawing.
 	void EndRendering();
+	
+	// Call this whenever you have new parameters to share. You could set this up to update different sets of properties at
+	// different intervals to save on locking and GPU transfer time.
 	void UpdateParameters(FShaderUsageExampleParameters& DrawParameters);
 
 private:
@@ -113,6 +122,4 @@ private:
 
 	void DrawEveryFrame_RenderThread(FRHICommandListImmediate& RHICmdList, class FSceneRenderTargets& SceneContext);
 	void Draw_RenderThread(const FShaderUsageExampleParameters& DrawParameters);
-	void SaveCSScreenshot_RenderThread(FRHICommandListImmediate& RHICmdList, FRHITexture2D* Texture);
-	void SavePSScreenShot_RenderThread(FRHICommandListImmediate& RHICmdList, FTexture2DRHIRef CurrentTexture);
 };

@@ -32,14 +32,8 @@
 #include "ShaderParameterStruct.h"
 #include "UniformBuffer.h"
 #include "RHICommandList.h"
-#include "Runtime/Engine/Classes/Engine/TextureRenderTarget2D.h"
 
-#define NUM_THREADS_PER_GROUP_DIMENSION 32 // This has to be the same as in the compute shader's spec [X, X, 1]
-
-/************************************************************************/
-/* Here starts the shader shell code                                    */
-/************************************************************************/
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+#define NUM_THREADS_PER_GROUP_DIMENSION 32
 
 /**********************************************************************************************/
 /* This class carries our parameter declarations and acts as the bridge between cpp and HLSL. */
@@ -52,8 +46,7 @@ public:
 
 	BEGIN_SHADER_PARAMETER_STRUCT(FParameters, )
 		SHADER_PARAMETER_UAV(RWTexture2D<uint>, OutputTexture)
-		SHADER_PARAMETER(float, SimulationSpeed)
-		SHADER_PARAMETER(float, TotalTimeElapsedSeconds)
+		SHADER_PARAMETER(float, SimulationState)
 	END_SHADER_PARAMETER_STRUCT()
 
 public:
@@ -78,18 +71,15 @@ IMPLEMENT_GLOBAL_SHADER(FComputeShaderExampleCS, "/Plugin/ShaderPlugin/Private/C
 
 void FComputeShaderExample::RunComputeShader_RenderThread(FRHICommandListImmediate& RHICmdList, const FShaderUsageExampleParameters& DrawParameters, FUnorderedAccessViewRHIRef ComputeShaderOutputUAV)
 {
-	FIntPoint TextureExtent(DrawParameters.RenderTarget->SizeX, DrawParameters.RenderTarget->SizeY);
-
 	UnbindRenderTargets(RHICmdList);
 	RHICmdList.TransitionResource(EResourceTransitionAccess::ERWBarrier, EResourceTransitionPipeline::EGfxToCompute, ComputeShaderOutputUAV);
 	
 	FComputeShaderExampleCS::FParameters PassParameters;
 	PassParameters.OutputTexture = ComputeShaderOutputUAV;
-	PassParameters.SimulationSpeed = DrawParameters.SimulationSpeed;
-	PassParameters.TotalTimeElapsedSeconds = DrawParameters.TotalElapsedTimeSecs;
+	PassParameters.SimulationState = DrawParameters.SimulationState;
 
 	TShaderMapRef<FComputeShaderExampleCS> ComputeShader(GetGlobalShaderMap(GMaxRHIFeatureLevel));
 	FComputeShaderUtils::Dispatch(RHICmdList, *ComputeShader, PassParameters, 
-								FIntVector(FMath::DivideAndRoundUp(TextureExtent.X, NUM_THREADS_PER_GROUP_DIMENSION), 
-										   FMath::DivideAndRoundUp(TextureExtent.Y, NUM_THREADS_PER_GROUP_DIMENSION), 1));
+								FIntVector(FMath::DivideAndRoundUp(DrawParameters.GetRenderTargetSize().X, NUM_THREADS_PER_GROUP_DIMENSION),
+										   FMath::DivideAndRoundUp(DrawParameters.GetRenderTargetSize().Y, NUM_THREADS_PER_GROUP_DIMENSION), 1));
 }

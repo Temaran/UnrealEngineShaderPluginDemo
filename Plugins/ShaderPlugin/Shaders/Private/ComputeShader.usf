@@ -5,8 +5,7 @@
 //
 // HLSL translation and parameterization by Temaran
 
-float SimulationSpeed;
-float TotalTimeElapsedSeconds;
+float SimulationState;
 RWTexture2D<uint> OutputTexture;
 
 [numthreads(THREADGROUPSIZE_X, THREADGROUPSIZE_Y, THREADGROUPSIZE_Z)]
@@ -18,7 +17,7 @@ void MainComputeShader(uint3 ThreadId : SV_DispatchThreadID)
 
 	float2 iResolution = float2(sizeX, sizeY);
 	float2 uv = (ThreadId.xy / iResolution.xy) - 0.5;
-	float iGlobalTime = SimulationSpeed * TotalTimeElapsedSeconds;
+	float iGlobalTime = SimulationState;
 
 	// This shader code is from www.shadertoy.com, converted to HLSL by me. If you have not checked out shadertoy yet, you REALLY should!!
 	float t = iGlobalTime * 0.1 + ((0.25 + 0.05 * sin(iGlobalTime * 0.1)) / (length(uv.xy) + 0.07)) * 2.2;

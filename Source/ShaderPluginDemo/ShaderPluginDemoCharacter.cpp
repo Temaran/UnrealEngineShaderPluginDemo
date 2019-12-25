@@ -34,6 +34,11 @@
 #include "Kismet/GameplayStatics.h"
 #include "Runtime/Engine/Classes/Materials/MaterialInstanceDynamic.h"
 
+// Add profiling macros
+// Rendering debug metadata is missing!
+// Clean code
+// Implement PR code from contributors
+
 AShaderPluginDemoCharacter::AShaderPluginDemoCharacter() 
 {
 	GetCapsuleComponent()->InitCapsuleSize(55.f, 96.0f);
@@ -68,13 +73,11 @@ AShaderPluginDemoCharacter::AShaderPluginDemoCharacter()
 
 	EndColorBuildup = 0;
 	EndColorBuildupDirection = 1;
-	PixelShaderTopLeftColor = FColor::Green;
+	StartColor = FColor::Green;
 	ComputeShaderSimulationSpeed = 1.0;
 	ComputeShaderBlend = 0.5f;
 	ComputeShaderBlendScalar = 0;
-	TotalElapsedTime = 0;
-	bSaveComputeShaderOutput = false;
-	bSavePixelShaderOutput = false;
+	TotalTimeSecs = 0.0f;
 }
 
 void AShaderPluginDemoCharacter::BeginPlay() 
@@ -90,15 +93,6 @@ void AShaderPluginDemoCharacter::BeginDestroy()
 	Super::BeginDestroy();
 }
 
-void AShaderPluginDemoCharacter::SavePixelShaderOutput() 
-{
-	bSavePixelShaderOutput = true;
-}
-void AShaderPluginDemoCharacter::SaveComputeShaderOutput() 
-{
-	bSaveComputeShaderOutput = true;
-}
-
 void AShaderPluginDemoCharacter::ModifyComputeShaderBlend(float NewScalar) 
 {
 	ComputeShaderBlendScalar = NewScalar;
@@ -107,8 +101,7 @@ void AShaderPluginDemoCharacter::ModifyComputeShaderBlend(float NewScalar)
 void AShaderPluginDemoCharacter::Tick(float DeltaSeconds) 
 {
 	Super::Tick(DeltaSeconds);
-
-	TotalElapsedTime += DeltaSeconds;
+	TotalTimeSecs += DeltaSeconds;
 
 	EndColorBuildup = FMath::Clamp(EndColorBuildup + DeltaSeconds * EndColorBuildupDirection, 0.0f, 1.0f);
 	if (EndColorBuildup >= 1.0 || EndColorBuildup <= 0) 
@@ -118,19 +111,17 @@ void AShaderPluginDemoCharacter::Tick(float DeltaSeconds)
 		
 	ComputeShaderBlend = FMath::Clamp(ComputeShaderBlend + ComputeShaderBlendScalar * DeltaSeconds, 0.0f, 1.0f);
 
-	FShaderUsageExampleParameters DrawParameters(RenderTarget, DeltaSeconds, TotalElapsedTime);
-	DrawParameters.SimulationSpeed = ComputeShaderSimulationSpeed;
-	DrawParameters.ComputeShaderBlend = ComputeShaderBlend;
-	DrawParameters.bSaveComputeShaderOutput = bSaveComputeShaderOutput;
-	DrawParameters.bSavePixelShaderOutput = bSavePixelShaderOutput;
-	DrawParameters.StartColor = PixelShaderTopLeftColor;
-	DrawParameters.EndColor = FColor(EndColorBuildup * 255, 0, 0, 255);
+	FShaderUsageExampleParameters DrawParameters(RenderTarget);
+	{
+		DrawParameters.SimulationState = ComputeShaderSimulationSpeed * TotalTimeSecs;
+		DrawParameters.ComputeShaderBlend = ComputeShaderBlend;
+		DrawParameters.StartColor = StartColor;
+		DrawParameters.EndColor = FColor(EndColorBuildup * 255, 0, 0, 255);
+	}
 
 	// If doing this for realsies, you should avoid doing this every frame unless you have to of course.
+	// We set it every frame here since we're updating the end color. Boop.
 	FShaderPluginModule::Get().UpdateParameters(DrawParameters);
-
-	bSavePixelShaderOutput = false;
-	bSaveComputeShaderOutput = false;
 }
 
 void AShaderPluginDemoCharacter::OnFire()
@@ -189,8 +180,6 @@ void AShaderPluginDemoCharacter::SetupPlayerInputComponent(class UInputComponent
 	PlayerInputComponent->BindAxis("LookUp", this, &APawn::AddControllerPitchInput);
 	PlayerInputComponent->BindAxis("LookUpRate", this, &AShaderPluginDemoCharacter::LookUpAtRate);
 	
-	PlayerInputComponent->BindAction("SavePixelShaderOutput", IE_Pressed, this, &AShaderPluginDemoCharacter::SavePixelShaderOutput);
-	PlayerInputComponent->BindAction("SaveComputeShaderOutput", IE_Pressed, this, &AShaderPluginDemoCharacter::SaveComputeShaderOutput);
 	PlayerInputComponent->BindAxis("ComputeShaderBlend", this, &AShaderPluginDemoCharacter::ModifyComputeShaderBlend);
 }
 
