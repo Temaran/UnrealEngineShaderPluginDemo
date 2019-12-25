@@ -79,91 +79,102 @@ TGlobalResource<FTextureVertexDeclaration> GTextureVertexDeclaration;
 class FSimplePassThroughVS : public FGlobalShader
 {
 public:
-	DECLARE_SHADER_TYPE(FSimplePassThroughVS, Global);
-	SHADER_USE_PARAMETER_STRUCT(FSimplePassThroughVS, FGlobalShader);
-
-	BEGIN_SHADER_PARAMETER_STRUCT(FParameters, )
-	END_SHADER_PARAMETER_STRUCT()
+	DECLARE_GLOBAL_SHADER(FSimplePassThroughVS);
 
 public:
 	static bool ShouldCompilePermutation(const FGlobalShaderPermutationParameters& Parameters)
 	{
 		return true;
 	}
+
+	FSimplePassThroughVS() { }
+	FSimplePassThroughVS(const ShaderMetaType::CompiledShaderInitializerType& Initializer) : FGlobalShader(Initializer)	{ }
+
+	virtual bool Serialize(FArchive& Ar) override
+	{
+		bool bShaderHasOutdatedParameters = FGlobalShader::Serialize(Ar);
+		return bShaderHasOutdatedParameters;
+	}
 };
+
 
 /**********************************************************************************************/
 /* This class carries our parameter declarations and acts as the bridge between cpp and HLSL. */
 /**********************************************************************************************/
+BEGIN_GLOBAL_SHADER_PARAMETER_STRUCT(FPixelShaderUniformBuffer, )
+SHADER_PARAMETER_SRV(Texture2D<uint>, ComputeShaderOutput)
+SHADER_PARAMETER(FVector4, StartColor)
+SHADER_PARAMETER(FVector4, EndColor)
+SHADER_PARAMETER(float, BlendFactor)
+END_GLOBAL_SHADER_PARAMETER_STRUCT()
+
+IMPLEMENT_GLOBAL_SHADER_PARAMETER_STRUCT(FPixelShaderUniformBuffer, "PixelShaderUniforms");
+
 class FPixelShaderExamplePS : public FGlobalShader
 {
 public:
 	DECLARE_GLOBAL_SHADER(FPixelShaderExamplePS);
-	SHADER_USE_PARAMETER_STRUCT(FPixelShaderExamplePS, FGlobalShader);
-
-	// Here we declare the layout of our parameter struct that we're going to use.
-	BEGIN_SHADER_PARAMETER_STRUCT(FParameters, )
-		RENDER_TARGET_BINDING_SLOTS()
-		SHADER_PARAMETER_RDG_TEXTURE_SRV(Texture2D<uint>, ComputeShaderOutput)
-		SHADER_PARAMETER(FVector4, StartColor)
-		SHADER_PARAMETER(FVector4, EndColor)
-		SHADER_PARAMETER(float, BlendFactor)
-	END_SHADER_PARAMETER_STRUCT()
 
 public:
 	static bool ShouldCompilePermutation(const FGlobalShaderPermutationParameters& Parameters)
 	{
 		return IsFeatureLevelSupported(Parameters.Platform, ERHIFeatureLevel::SM5);
 	}
+
+	FPixelShaderExamplePS() { }
+	FPixelShaderExamplePS(const ShaderMetaType::CompiledShaderInitializerType& Initializer) : FGlobalShader(Initializer) { }
+
+	virtual bool Serialize(FArchive& Ar) override
+	{
+		bool bShaderHasOutdatedParameters = FGlobalShader::Serialize(Ar);
+		return bShaderHasOutdatedParameters;
+	}
+
+	void SetParameters(FRHICommandList& CommandList, const FShaderUsageExampleParameters& DrawParameters, FRDGTextureRef ComputeShaderOutput)
+	{
+ 		FPixelShaderUniformBuffer PixelShaderUniforms;
+ 		{
+ 			//TODO: Iffy
+ 			PixelShaderUniforms.ComputeShaderOutput = RHICreateShaderResourceView(ComputeShaderOutput->GetRHI(), 0);
+ 			PixelShaderUniforms.StartColor = FVector4(DrawParameters.StartColor.R, DrawParameters.StartColor.G, DrawParameters.StartColor.B, DrawParameters.StartColor.A);
+ 			PixelShaderUniforms.EndColor = FVector4(DrawParameters.EndColor.R, DrawParameters.EndColor.G, DrawParameters.EndColor.B, DrawParameters.EndColor.A);
+ 			PixelShaderUniforms.BlendFactor = DrawParameters.ComputeShaderBlend;
+ 		}
+ 
+ 		TUniformBufferRef<FPixelShaderUniformBuffer> Data = TUniformBufferRef<FPixelShaderUniformBuffer>::CreateUniformBufferImmediate(PixelShaderUniforms, UniformBuffer_SingleFrame);
+ 		SetUniformBufferParameter(CommandList, GetPixelShader(), GetUniformBufferParameter<FPixelShaderUniformBuffer>(), Data);
+	}
 };
 
-// Vertex shaders generally still use this macro
+// For these shaders we will use the old macro
 //                           ShaderType                            ShaderPath                      Shader function name    Type
 IMPLEMENT_SHADER_TYPE(, FSimplePassThroughVS, TEXT("/Plugin/ShaderPlugin/Private/PixelShader.usf"), TEXT("MainVertexShader"), SF_Vertex);
+IMPLEMENT_SHADER_TYPE(, FPixelShaderExamplePS, TEXT("/Plugin/ShaderPlugin/Private/PixelShader.usf"), TEXT("MainPixelShader"), SF_Pixel);
 
-// For the pixel shader we will use the global macro.
-//                           ShaderType                            ShaderPath                      Shader function name    Type
-IMPLEMENT_GLOBAL_SHADER(FPixelShaderExamplePS, "/Plugin/ShaderPlugin/Private/PixelShader.usf", "MainPixelShader", SF_Pixel);
-
-void FPixelShaderExample::AddPass_RenderThread(FRDGBuilder& GraphBuilder, const FShaderUsageExampleParameters& DrawParameters, FRDGTextureRef& ComputeShaderOutput)
+void FPixelShaderExample::DrawToRenderTarget_RenderThread(FRHICommandListImmediate& RHICmdList, const FShaderUsageExampleParameters& DrawParameters, FRDGTextureRef& ComputeShaderOutput)
 {
-// 	FPixelShaderExamplePS::FParameters* Parameters = GraphBuilder.AllocParameters<FPixelShaderExamplePS::FParameters>();
-// 	Parameters->ComputeShaderOutput = GraphBuilder.CreateSRV(FRDGTextureSRVDesc::Create(ComputeShaderOutput));
-// 	Parameters->StartColor = FVector4(DrawParameters.StartColor.R, DrawParameters.StartColor.G, DrawParameters.StartColor.B, DrawParameters.StartColor.A);
-// 	Parameters->EndColor = FVector4(DrawParameters.EndColor.R, DrawParameters.EndColor.G, DrawParameters.EndColor.B, DrawParameters.EndColor.A);
-// 	Parameters->BlendFactor = DrawParameters.ComputeShaderBlend;
-// 	Parameters->RenderTargets[0] = FRenderTargetBinding(GraphBuilder.RegisterExternalTexture(DrawParameters.RenderTarget), ERenderTargetLoadAction::EClear);
-// 
-// 	GraphBuilder.AddPass(RDG_EVENT_NAME("ShaderPlugin PixelShaderExample"),	Parameters,	ERDGPassFlags::Raster, 
-// 	[Parameters, DrawParameters, DrawResources](FRHICommandList& RHICmdList)
-// 	{
-// 		TShaderMapRef<FSimplePassThroughVS> VertexShader(GetGlobalShaderMap(DrawParameters.ShaderFeatureLevel));
-// 		TShaderMapRef<FPixelShaderExamplePS> PixelShader(GetGlobalShaderMap(DrawParameters.ShaderFeatureLevel));
-// 		
-// 		SetShaderParameters(RHICmdList, *PixelShader, PixelShader->GetPixelShader(), *Parameters);
-// 
-// 		// Set the graphic pipeline state.
-// 		FGraphicsPipelineStateInitializer GraphicsPSOInit;
-// 		GraphicsPSOInit.DepthStencilState = TStaticDepthStencilState<false, CF_Never>::GetRHI();
-// 		GraphicsPSOInit.BlendState = TStaticBlendState<>::GetRHI();
-// 		GraphicsPSOInit.RasterizerState = TStaticRasterizerState<>::GetRHI();
-// 		GraphicsPSOInit.BoundShaderState.VertexDeclarationRHI = GTextureVertexDeclaration.VertexDeclarationRHI;
-// 		GraphicsPSOInit.BoundShaderState.VertexShaderRHI = GETSAFERHISHADER_VERTEX(*VertexShader);
-// 		GraphicsPSOInit.BoundShaderState.PixelShaderRHI = GETSAFERHISHADER_PIXEL(*PixelShader);
-// 		GraphicsPSOInit.PrimitiveType = PT_TriangleList;
-// 		
-// 		SetGraphicsPipelineState(RHICmdList, GraphicsPSOInit);
-// 
-// 		FPixelShaderUtils::DrawFullscreenQuad(RHICmdList, 1);
-// 
-// 		if (DrawParameters.RenderTarget)
-// 		{
-// 			// Here we copy our output from our IPooledRenderTarget to our render target.
-// 			// It would be more effective to simply draw to the render target with out pixel shader, but I do a resource copy here to provide it as an example.
-// 			// Also, if we wanted to draw with the pixel shader, we would have to create our own draw pass using RHICmdList.BeginRenderPass().
-// 			// This is because the Graph builder system can only work on IPooledRenderTargets.
-// 			//RHICmdList.CopyTexture(DrawResources.RenderTarget->GetRenderTargetItem().TargetableTexture
-// 			//	, DrawParameters.RenderTarget->GetRenderTargetResource()->TextureRHI, FRHICopyTextureInfo());
-// 		}
-// 	});
+	FRHIRenderPassInfo RenderPassInfo(DrawParameters.RenderTarget->GetRenderTargetResource()->GetRenderTargetTexture(), ERenderTargetActions::Clear_Store);
+	RHICmdList.BeginRenderPass(RenderPassInfo, TEXT("ShaderPlugin_OutputToRenderTarget"));
+
+	auto ShaderMap = GetGlobalShaderMap(GMaxRHIFeatureLevel);
+ 	TShaderMapRef<FSimplePassThroughVS> VertexShader(ShaderMap);
+ 	TShaderMapRef<FPixelShaderExamplePS> PixelShader(ShaderMap);
+ 		
+ 	// Set the graphic pipeline state.
+ 	FGraphicsPipelineStateInitializer GraphicsPSOInit;
+	RHICmdList.ApplyCachedRenderTargets(GraphicsPSOInit);
+ 	GraphicsPSOInit.DepthStencilState = TStaticDepthStencilState<false, CF_Never>::GetRHI();
+ 	GraphicsPSOInit.BlendState = TStaticBlendState<>::GetRHI();
+ 	GraphicsPSOInit.RasterizerState = TStaticRasterizerState<>::GetRHI();
+ 	GraphicsPSOInit.BoundShaderState.VertexDeclarationRHI = GTextureVertexDeclaration.VertexDeclarationRHI;
+ 	GraphicsPSOInit.BoundShaderState.VertexShaderRHI = GETSAFERHISHADER_VERTEX(*VertexShader);
+ 	GraphicsPSOInit.BoundShaderState.PixelShaderRHI = GETSAFERHISHADER_PIXEL(*PixelShader);
+ 	GraphicsPSOInit.PrimitiveType = PT_TriangleList;
+ 		
+ 	SetGraphicsPipelineState(RHICmdList, GraphicsPSOInit);
+	PixelShader->SetParameters(RHICmdList, DrawParameters, ComputeShaderOutput);
+ 
+ 	FPixelShaderUtils::DrawFullscreenQuad(RHICmdList, 1);
+
+	RHICmdList.EndRenderPass();
 }

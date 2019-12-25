@@ -118,7 +118,7 @@ void AShaderPluginDemoCharacter::Tick(float DeltaSeconds)
 		
 	ComputeShaderBlend = FMath::Clamp(ComputeShaderBlend + ComputeShaderBlendScalar * DeltaSeconds, 0.0f, 1.0f);
 
-	FShaderUsageExampleParameters DrawParameters(GetWorld()->Scene->GetFeatureLevel(), RenderTarget, DeltaSeconds, TotalElapsedTime);
+	FShaderUsageExampleParameters DrawParameters(RenderTarget, DeltaSeconds, TotalElapsedTime);
 	DrawParameters.SimulationSpeed = ComputeShaderSimulationSpeed;
 	DrawParameters.ComputeShaderBlend = ComputeShaderBlend;
 	DrawParameters.bSaveComputeShaderOutput = bSaveComputeShaderOutput;

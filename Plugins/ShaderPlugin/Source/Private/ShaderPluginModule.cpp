@@ -121,9 +121,9 @@ void FShaderPluginModule::Draw_RenderThread(const FShaderUsageExampleParameters&
 
 	FRDGTextureRef ComputeShaderOutput;
 	FComputeShaderExample::AddPass_RenderThread(GraphBuilder, DrawParameters, ComputeShaderOutput);
-	FPixelShaderExample::AddPass_RenderThread(GraphBuilder, DrawParameters, ComputeShaderOutput);
-
 	GraphBuilder.Execute();
+
+	FPixelShaderExample::DrawToRenderTarget_RenderThread(RHICmdList, DrawParameters, ComputeShaderOutput);
 
 	if (DrawParameters.bSaveComputeShaderOutput)
 	{

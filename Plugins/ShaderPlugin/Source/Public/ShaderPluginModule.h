@@ -35,7 +35,6 @@
 struct FShaderUsageExampleParameters
 {
 	UTextureRenderTarget2D* RenderTarget;
-	ERHIFeatureLevel::Type ShaderFeatureLevel;
 	FColor StartColor;
 	FColor EndColor;
 	float SimulationSpeed;
@@ -46,9 +45,8 @@ struct FShaderUsageExampleParameters
 	bool bSavePixelShaderOutput;
 
 	FShaderUsageExampleParameters() { }
-	FShaderUsageExampleParameters(ERHIFeatureLevel::Type InShaderFeatureLevel, UTextureRenderTarget2D* InRenderTarget, float InDeltaTimeSeconds, float InTotalTimeSeconds)
+	FShaderUsageExampleParameters(UTextureRenderTarget2D* InRenderTarget, float InDeltaTimeSeconds, float InTotalTimeSeconds)
 		: RenderTarget(InRenderTarget)
-		, ShaderFeatureLevel(InShaderFeatureLevel)
 		, StartColor(FColor::White)
 		, EndColor(FColor::White)
 		, SimulationSpeed(1.0f)

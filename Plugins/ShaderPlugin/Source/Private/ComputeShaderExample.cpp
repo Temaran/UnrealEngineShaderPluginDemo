@@ -87,7 +87,7 @@ void FComputeShaderExample::AddPass_RenderThread(FRDGBuilder& GraphBuilder, cons
 	Parameters->OutputTexture = GraphBuilder.CreateUAV(ComputeShaderOutput);
 
 	// We can use this util here to make it a bit easier to setup the compute shader pass
-	TShaderMapRef<FComputeShaderExampleCS> ComputeShader(GetGlobalShaderMap(DrawParameters.ShaderFeatureLevel));
+	TShaderMapRef<FComputeShaderExampleCS> ComputeShader(GetGlobalShaderMap(GMaxRHIFeatureLevel));
 	FComputeShaderUtils::AddPass(
 		GraphBuilder,
 		RDG_EVENT_NAME("ShaderPlugin ComputeShaderExample running with sim speed: %f. Saving to disk: %d", DrawParameters.SimulationSpeed, DrawParameters.bSaveComputeShaderOutput),
