@@ -41,14 +41,6 @@
 /************************************************************************/
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-BEGIN_GLOBAL_SHADER_PARAMETER_STRUCT(FComputeShaderUniformBuffer, )
-SHADER_PARAMETER(float, SimulationSpeed)
-SHADER_PARAMETER(float, TotalTimeElapsedSeconds)
-SHADER_PARAMETER_UAV(RWTexture2D<uint>, OutputTexture)
-END_GLOBAL_SHADER_PARAMETER_STRUCT()
-
-IMPLEMENT_GLOBAL_SHADER_PARAMETER_STRUCT(FComputeShaderUniformBuffer, "ComputeShaderUniforms");
-
 /**********************************************************************************************/
 /* This class carries our parameter declarations and acts as the bridge between cpp and HLSL. */
 /**********************************************************************************************/
@@ -56,6 +48,13 @@ class FComputeShaderExampleCS : public FGlobalShader
 {
 public:
 	DECLARE_GLOBAL_SHADER(FComputeShaderExampleCS);
+	SHADER_USE_PARAMETER_STRUCT(FComputeShaderExampleCS, FGlobalShader);
+
+	BEGIN_SHADER_PARAMETER_STRUCT(FParameters, )
+		SHADER_PARAMETER_UAV(RWTexture2D<uint>, OutputTexture)
+		SHADER_PARAMETER(float, SimulationSpeed)
+		SHADER_PARAMETER(float, TotalTimeElapsedSeconds)
+	END_SHADER_PARAMETER_STRUCT()
 
 public:
 	static bool ShouldCompilePermutation(const FGlobalShaderPermutationParameters& Parameters)
@@ -71,28 +70,6 @@ public:
 		OutEnvironment.SetDefine(TEXT("THREADGROUPSIZE_Y"), NUM_THREADS_PER_GROUP_DIMENSION);
 		OutEnvironment.SetDefine(TEXT("THREADGROUPSIZE_Z"), 1);
 	}
-
-	FComputeShaderExampleCS() { }
-	FComputeShaderExampleCS(const ShaderMetaType::CompiledShaderInitializerType& Initializer) : FGlobalShader(Initializer) { }
-
-	virtual bool Serialize(FArchive& Ar) override
-	{
-		bool bShaderHasOutdatedParameters = FGlobalShader::Serialize(Ar);
-		return bShaderHasOutdatedParameters;
-	}
-
-	void SetParameters(FRHICommandList& CommandList, const FShaderUsageExampleParameters& DrawParameters, FUnorderedAccessViewRHIRef ComputeShaderOutputUAV)
-	{
-		FComputeShaderUniformBuffer ComputeShaderUniforms;
-		{
-			ComputeShaderUniforms.OutputTexture = ComputeShaderOutputUAV;
-			ComputeShaderUniforms.SimulationSpeed = DrawParameters.SimulationSpeed;
-			ComputeShaderUniforms.TotalTimeElapsedSeconds = DrawParameters.TotalElapsedTimeSecs;
-		}
-
-		TUniformBufferRef<FComputeShaderUniformBuffer> Data = TUniformBufferRef<FComputeShaderUniformBuffer>::CreateUniformBufferImmediate(ComputeShaderUniforms, UniformBuffer_SingleFrame);
-		SetUniformBufferParameter(CommandList, GetComputeShader(), GetUniformBufferParameter<FComputeShaderUniformBuffer>(), Data);
-	}
 };
 
 // This will tell the engine to create the shader and where the shader entry point is.
@@ -105,14 +82,14 @@ void FComputeShaderExample::RunComputeShader_RenderThread(FRHICommandListImmedia
 
 	UnbindRenderTargets(RHICmdList);
 	RHICmdList.TransitionResource(EResourceTransitionAccess::ERWBarrier, EResourceTransitionPipeline::EGfxToCompute, ComputeShaderOutputUAV);
+	
+	FComputeShaderExampleCS::FParameters PassParameters;
+	PassParameters.OutputTexture = ComputeShaderOutputUAV;
+	PassParameters.SimulationSpeed = DrawParameters.SimulationSpeed;
+	PassParameters.TotalTimeElapsedSeconds = DrawParameters.TotalElapsedTimeSecs;
 
 	TShaderMapRef<FComputeShaderExampleCS> ComputeShader(GetGlobalShaderMap(GMaxRHIFeatureLevel));
-	FRHIComputeShader* ShaderRHI = ComputeShader->GetComputeShader();
-	RHICmdList.SetComputeShader(ShaderRHI);
-	ComputeShader->SetParameters(RHICmdList, DrawParameters, ComputeShaderOutputUAV);
-
-	RHICmdList.DispatchComputeShader(FMath::DivideAndRoundUp(TextureExtent.X, NUM_THREADS_PER_GROUP_DIMENSION),
-									 FMath::DivideAndRoundUp(TextureExtent.Y, NUM_THREADS_PER_GROUP_DIMENSION),
-									 1);
-
+	FComputeShaderUtils::Dispatch(RHICmdList, *ComputeShader, PassParameters, 
+								FIntVector(FMath::DivideAndRoundUp(TextureExtent.X, NUM_THREADS_PER_GROUP_DIMENSION), 
+										   FMath::DivideAndRoundUp(TextureExtent.Y, NUM_THREADS_PER_GROUP_DIMENSION), 1));
 }

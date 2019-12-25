@@ -126,7 +126,7 @@ void FShaderPluginModule::Draw_RenderThread(const FShaderUsageExampleParameters&
 	}
 
 	FComputeShaderExample::RunComputeShader_RenderThread(RHICmdList, DrawParameters, ComputeShaderOutput->GetRenderTargetItem().UAV);
-	FPixelShaderExample::DrawToRenderTarget_RenderThread(RHICmdList, DrawParameters, nullptr);
+	FPixelShaderExample::DrawToRenderTarget_RenderThread(RHICmdList, DrawParameters, ComputeShaderOutput->GetRenderTargetItem().TargetableTexture);
 
 	if (DrawParameters.bSaveComputeShaderOutput)
 	{

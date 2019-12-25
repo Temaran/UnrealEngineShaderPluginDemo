@@ -102,7 +102,7 @@ public:
 /* This class carries our parameter declarations and acts as the bridge between cpp and HLSL. */
 /**********************************************************************************************/
 BEGIN_GLOBAL_SHADER_PARAMETER_STRUCT(FPixelShaderUniformBuffer, )
-SHADER_PARAMETER_SRV(Texture2D<uint>, ComputeShaderOutput)
+SHADER_PARAMETER_TEXTURE(Texture2D<uint>, ComputeShaderOutput)
 SHADER_PARAMETER(FVector4, StartColor)
 SHADER_PARAMETER(FVector4, EndColor)
 SHADER_PARAMETER(float, BlendFactor)
@@ -130,11 +130,11 @@ public:
 		return bShaderHasOutdatedParameters;
 	}
 
-	void SetParameters(FRHICommandList& CommandList, const FShaderUsageExampleParameters& DrawParameters, FShaderResourceViewRHIRef ComputeShaderOutputSRV)
+	void SetParameters(FRHICommandList& CommandList, const FShaderUsageExampleParameters& DrawParameters, FTextureRHIRef ComputeShaderOutput)
 	{
  		FPixelShaderUniformBuffer PixelShaderUniforms;
  		{
- 			PixelShaderUniforms.ComputeShaderOutput = ComputeShaderOutputSRV;
+ 			PixelShaderUniforms.ComputeShaderOutput = ComputeShaderOutput;
  			PixelShaderUniforms.StartColor = FVector4(DrawParameters.StartColor.R, DrawParameters.StartColor.G, DrawParameters.StartColor.B, DrawParameters.StartColor.A);
  			PixelShaderUniforms.EndColor = FVector4(DrawParameters.EndColor.R, DrawParameters.EndColor.G, DrawParameters.EndColor.B, DrawParameters.EndColor.A);
  			PixelShaderUniforms.BlendFactor = DrawParameters.ComputeShaderBlend;
@@ -150,7 +150,7 @@ public:
 IMPLEMENT_SHADER_TYPE(, FSimplePassThroughVS, TEXT("/Plugin/ShaderPlugin/Private/PixelShader.usf"), TEXT("MainVertexShader"), SF_Vertex);
 IMPLEMENT_SHADER_TYPE(, FPixelShaderExamplePS, TEXT("/Plugin/ShaderPlugin/Private/PixelShader.usf"), TEXT("MainPixelShader"), SF_Pixel);
 
-void FPixelShaderExample::DrawToRenderTarget_RenderThread(FRHICommandListImmediate& RHICmdList, const FShaderUsageExampleParameters& DrawParameters, FShaderResourceViewRHIRef ComputeShaderOutputSRV)
+void FPixelShaderExample::DrawToRenderTarget_RenderThread(FRHICommandListImmediate& RHICmdList, const FShaderUsageExampleParameters& DrawParameters, FTextureRHIRef ComputeShaderOutput)
 {
 	FRHIRenderPassInfo RenderPassInfo(DrawParameters.RenderTarget->GetRenderTargetResource()->GetRenderTargetTexture(), ERenderTargetActions::Clear_Store);
 	RHICmdList.BeginRenderPass(RenderPassInfo, TEXT("ShaderPlugin_OutputToRenderTarget"));
@@ -171,7 +171,7 @@ void FPixelShaderExample::DrawToRenderTarget_RenderThread(FRHICommandListImmedia
 	GraphicsPSOInit.PrimitiveType = PT_TriangleList;
  		
  	SetGraphicsPipelineState(RHICmdList, GraphicsPSOInit);
-	PixelShader->SetParameters(RHICmdList, DrawParameters, ComputeShaderOutputSRV);
+	PixelShader->SetParameters(RHICmdList, DrawParameters, ComputeShaderOutput);
  
  	FPixelShaderUtils::DrawFullscreenQuad(RHICmdList, 1);
 
