@@ -37,18 +37,14 @@ namespace UnrealBuildTool.Rules
 			});
 
 			PrivateDependencyModuleNames.AddRange(new string[]
-			{
-				"Projects"
-			});
-
-			PublicDependencyModuleNames.AddRange(new string[]
-			{
-				"Core",
-				"CoreUObject",
-				"Engine",
-				"Renderer",
-				"RenderCore",
-				"RHI"
+            {
+                "Core",
+                "CoreUObject",
+                "Engine",
+                "Renderer",
+                "RenderCore",
+                "RHI",
+                "Projects"
 			});
 		}
 	}

@@ -34,8 +34,6 @@
 #include "Kismet/GameplayStatics.h"
 #include "Runtime/Engine/Classes/Materials/MaterialInstanceDynamic.h"
 
-// Add profiling macros
-// Rendering debug metadata is missing!
 // Clean code
 // Implement PR code from contributors
 

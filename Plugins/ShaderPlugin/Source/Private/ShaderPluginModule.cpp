@@ -38,6 +38,11 @@
 
 IMPLEMENT_MODULE(FShaderPluginModule, ShaderPlugin)
 
+// Declare some GPU stats so we can track them later
+DECLARE_GPU_STAT_NAMED(ShaderPlugin_Render, TEXT("ShaderPlugin: Root Render"));
+DECLARE_GPU_STAT_NAMED(ShaderPlugin_Compute, TEXT("ShaderPlugin: Render Compute Shader"));
+DECLARE_GPU_STAT_NAMED(ShaderPlugin_Pixel, TEXT("ShaderPlugin: Render Pixel Shader"));
+
 void FShaderPluginModule::StartupModule()
 {
 	OnPostResolvedSceneColorHandle.Reset();
@@ -120,6 +125,9 @@ void FShaderPluginModule::Draw_RenderThread(const FShaderUsageExampleParameters&
 	}
 
 	FRHICommandListImmediate& RHICmdList = GRHICommandList.GetImmediateCommandList();
+
+	QUICK_SCOPE_CYCLE_COUNTER(STAT_ShaderPlugin_Render); // Used to gather CPU profiling data for the UE4 session frontend
+	SCOPED_DRAW_EVENT(RHICmdList, ShaderPlugin_Render); // Used to profile GPU activity and add metadata to be consumed by for example RenderDoc
 
 	if (!ComputeShaderOutput.IsValid())
 	{
