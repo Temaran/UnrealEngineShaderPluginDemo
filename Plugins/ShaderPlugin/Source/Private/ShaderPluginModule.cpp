@@ -117,17 +117,20 @@ void FShaderPluginModule::Draw_RenderThread(const FShaderUsageExampleParameters&
 
 	FRHICommandListImmediate& RHICmdList = GRHICommandList.GetImmediateCommandList();
 
-	FRDGBuilder GraphBuilder(RHICmdList);
+	if (!ComputeShaderOutput.IsValid())
+	{
+		FIntPoint TextureExtent(DrawParameters.RenderTarget->SizeX, DrawParameters.RenderTarget->SizeY);
+		FPooledRenderTargetDesc ComputeShaderOutputDesc(FPooledRenderTargetDesc::Create2DDesc(TextureExtent, PF_R32_UINT, FClearValueBinding::None, TexCreate_None, TexCreate_ShaderResource | TexCreate_UAV, false));
+		ComputeShaderOutputDesc.DebugName = TEXT("ShaderPlugin_ComputeShaderOutput");
+		GRenderTargetPool.FindFreeElement(RHICmdList, ComputeShaderOutputDesc, ComputeShaderOutput, TEXT("ShaderPlugin_ComputeShaderOutput"));
+	}
 
-	FRDGTextureRef ComputeShaderOutput;
-	FComputeShaderExample::AddPass_RenderThread(GraphBuilder, DrawParameters, ComputeShaderOutput);
-	GraphBuilder.Execute();
-
-	FPixelShaderExample::DrawToRenderTarget_RenderThread(RHICmdList, DrawParameters, ComputeShaderOutput);
+	FComputeShaderExample::RunComputeShader_RenderThread(RHICmdList, DrawParameters, ComputeShaderOutput->GetRenderTargetItem().UAV);
+	FPixelShaderExample::DrawToRenderTarget_RenderThread(RHICmdList, DrawParameters, nullptr);
 
 	if (DrawParameters.bSaveComputeShaderOutput)
 	{
-		SaveCSScreenshot_RenderThread(RHICmdList, (FRHITexture2D*)ComputeShaderOutput->GetRHI());
+		SaveCSScreenshot_RenderThread(RHICmdList, ComputeShaderOutput->GetRenderTargetItem().TargetableTexture->GetTexture2D());
 	}
 
 	if (DrawParameters.bSavePixelShaderOutput && DrawParameters.RenderTarget)

@@ -105,6 +105,7 @@ public:
 	void UpdateParameters(FShaderUsageExampleParameters& DrawParameters);
 
 private:
+	TRefCountPtr<IPooledRenderTarget> ComputeShaderOutput;
 	FShaderUsageExampleParameters CachedShaderUsageExampleParameters;
 	FDelegateHandle OnPostResolvedSceneColorHandle;
 	FCriticalSection RenderEveryFrameLock;

@@ -41,6 +41,14 @@
 /************************************************************************/
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+BEGIN_GLOBAL_SHADER_PARAMETER_STRUCT(FComputeShaderUniformBuffer, )
+SHADER_PARAMETER(float, SimulationSpeed)
+SHADER_PARAMETER(float, TotalTimeElapsedSeconds)
+SHADER_PARAMETER_UAV(RWTexture2D<uint>, OutputTexture)
+END_GLOBAL_SHADER_PARAMETER_STRUCT()
+
+IMPLEMENT_GLOBAL_SHADER_PARAMETER_STRUCT(FComputeShaderUniformBuffer, "ComputeShaderUniforms");
+
 /**********************************************************************************************/
 /* This class carries our parameter declarations and acts as the bridge between cpp and HLSL. */
 /**********************************************************************************************/
@@ -48,19 +56,42 @@ class FComputeShaderExampleCS : public FGlobalShader
 {
 public:
 	DECLARE_GLOBAL_SHADER(FComputeShaderExampleCS);
-	SHADER_USE_PARAMETER_STRUCT(FComputeShaderExampleCS, FGlobalShader);
-
-// Here we declare the layout of our parameter struct that we're going to use.
-	BEGIN_SHADER_PARAMETER_STRUCT(FParameters, )
-		SHADER_PARAMETER(float, SimulationSpeed)
-		SHADER_PARAMETER(float, TotalTimeElapsedSeconds)
-		SHADER_PARAMETER_RDG_TEXTURE_UAV(RWTexture2D<uint>, OutputTexture)
-	END_SHADER_PARAMETER_STRUCT()
 
 public:
 	static bool ShouldCompilePermutation(const FGlobalShaderPermutationParameters& Parameters)
 	{
 		return IsFeatureLevelSupported(Parameters.Platform, ERHIFeatureLevel::SM5);
+	}
+
+	static inline void ModifyCompilationEnvironment(const FGlobalShaderPermutationParameters& Parameters, FShaderCompilerEnvironment& OutEnvironment)
+	{
+		FGlobalShader::ModifyCompilationEnvironment(Parameters, OutEnvironment);
+
+		OutEnvironment.SetDefine(TEXT("THREADGROUPSIZE_X"), NUM_THREADS_PER_GROUP_DIMENSION);
+		OutEnvironment.SetDefine(TEXT("THREADGROUPSIZE_Y"), NUM_THREADS_PER_GROUP_DIMENSION);
+		OutEnvironment.SetDefine(TEXT("THREADGROUPSIZE_Z"), 1);
+	}
+
+	FComputeShaderExampleCS() { }
+	FComputeShaderExampleCS(const ShaderMetaType::CompiledShaderInitializerType& Initializer) : FGlobalShader(Initializer) { }
+
+	virtual bool Serialize(FArchive& Ar) override
+	{
+		bool bShaderHasOutdatedParameters = FGlobalShader::Serialize(Ar);
+		return bShaderHasOutdatedParameters;
+	}
+
+	void SetParameters(FRHICommandList& CommandList, const FShaderUsageExampleParameters& DrawParameters, FUnorderedAccessViewRHIRef ComputeShaderOutputUAV)
+	{
+		FComputeShaderUniformBuffer ComputeShaderUniforms;
+		{
+			ComputeShaderUniforms.OutputTexture = ComputeShaderOutputUAV;
+			ComputeShaderUniforms.SimulationSpeed = DrawParameters.SimulationSpeed;
+			ComputeShaderUniforms.TotalTimeElapsedSeconds = DrawParameters.TotalElapsedTimeSecs;
+		}
+
+		TUniformBufferRef<FComputeShaderUniformBuffer> Data = TUniformBufferRef<FComputeShaderUniformBuffer>::CreateUniformBufferImmediate(ComputeShaderUniforms, UniformBuffer_SingleFrame);
+		SetUniformBufferParameter(CommandList, GetComputeShader(), GetUniformBufferParameter<FComputeShaderUniformBuffer>(), Data);
 	}
 };
 
@@ -68,30 +99,20 @@ public:
 //                            ShaderType                            ShaderPath                     Shader function name    Type
 IMPLEMENT_GLOBAL_SHADER(FComputeShaderExampleCS, "/Plugin/ShaderPlugin/Private/ComputeShader.usf", "MainComputeShader", SF_Compute);
 
-void FComputeShaderExample::AddPass_RenderThread(FRDGBuilder& GraphBuilder, const FShaderUsageExampleParameters& DrawParameters, FRDGTextureRef& ComputeShaderOutput)
+void FComputeShaderExample::RunComputeShader_RenderThread(FRHICommandListImmediate& RHICmdList, const FShaderUsageExampleParameters& DrawParameters, FUnorderedAccessViewRHIRef ComputeShaderOutputUAV)
 {
 	FIntPoint TextureExtent(DrawParameters.RenderTarget->SizeX, DrawParameters.RenderTarget->SizeY);
 
-	FRDGTextureDesc Desc;
-	Desc.Extent = TextureExtent;
-	Desc.Format = PF_R32_UINT;
-	Desc.NumMips = 1;
-	Desc.NumSamples = 1;
-	Desc.TargetableFlags = TexCreate_ShaderResource | TexCreate_UAV;
-	Desc.DebugName = TEXT("ShaderPlugin_ComputeShaderOutput");
-	ComputeShaderOutput = GraphBuilder.CreateTexture(Desc, TEXT("ShaderPlugin_ComputeShaderOutputTexture"), ERDGResourceFlags::None);
+	UnbindRenderTargets(RHICmdList);
+	RHICmdList.TransitionResource(EResourceTransitionAccess::ERWBarrier, EResourceTransitionPipeline::EGfxToCompute, ComputeShaderOutputUAV);
 
-	FComputeShaderExampleCS::FParameters* Parameters = GraphBuilder.AllocParameters<FComputeShaderExampleCS::FParameters>();
-	Parameters->SimulationSpeed = DrawParameters.SimulationSpeed;
-	Parameters->TotalTimeElapsedSeconds = DrawParameters.TotalElapsedTimeSecs;
-	Parameters->OutputTexture = GraphBuilder.CreateUAV(ComputeShaderOutput);
-
-	// We can use this util here to make it a bit easier to setup the compute shader pass
 	TShaderMapRef<FComputeShaderExampleCS> ComputeShader(GetGlobalShaderMap(GMaxRHIFeatureLevel));
-	FComputeShaderUtils::AddPass(
-		GraphBuilder,
-		RDG_EVENT_NAME("ShaderPlugin ComputeShaderExample running with sim speed: %f. Saving to disk: %d", DrawParameters.SimulationSpeed, DrawParameters.bSaveComputeShaderOutput),
-		*ComputeShader,
-		Parameters,
-		FIntVector(TextureExtent.X / NUM_THREADS_PER_GROUP_DIMENSION, TextureExtent.Y / NUM_THREADS_PER_GROUP_DIMENSION, 1));
+	FRHIComputeShader* ShaderRHI = ComputeShader->GetComputeShader();
+	RHICmdList.SetComputeShader(ShaderRHI);
+	ComputeShader->SetParameters(RHICmdList, DrawParameters, ComputeShaderOutputUAV);
+
+	RHICmdList.DispatchComputeShader(FMath::DivideAndRoundUp(TextureExtent.X, NUM_THREADS_PER_GROUP_DIMENSION),
+									 FMath::DivideAndRoundUp(TextureExtent.Y, NUM_THREADS_PER_GROUP_DIMENSION),
+									 1);
+
 }

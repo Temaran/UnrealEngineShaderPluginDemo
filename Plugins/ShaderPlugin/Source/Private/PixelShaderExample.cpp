@@ -39,39 +39,39 @@
 /************************************************************************/
 /* This is the type we use as vertices for our fullscreen quad.         */
 /************************************************************************/
-struct FTextureVertex
-{
-	FVector4 Position;
-	FVector2D UV;
-};
-
-/************************************************************************/
-/* We define our vertex declaration to let us get our UV coords into    */
-/* the shader                                                           */
-/************************************************************************/
-class FTextureVertexDeclaration : public FRenderResource
-{
-public:
-	FVertexDeclarationRHIRef VertexDeclarationRHI;
-
-	virtual void InitRHI() override
-	{
-		FVertexDeclarationElementList Elements;
-		uint32 Stride = sizeof(FTextureVertex);
-		Elements.Add(FVertexElement(0, STRUCT_OFFSET(FTextureVertex, Position), VET_Float4, 0, Stride));
-		Elements.Add(FVertexElement(0, STRUCT_OFFSET(FTextureVertex, UV), VET_Float2, 1, Stride));
-		VertexDeclarationRHI = RHICreateVertexDeclaration(Elements);
-	}
-
-	virtual void ReleaseRHI() override
-	{
-		VertexDeclarationRHI.SafeRelease();
-	}
-}; 
+// struct FTextureVertex
+// {
+// 	FVector4 Position;
+// 	FVector2D UV;
+// };
+// 
+// /************************************************************************/
+// /* We define our vertex declaration to let us get our UV coords into    */
+// /* the shader                                                           */
+// /************************************************************************/
+// class FTextureVertexDeclaration : public FRenderResource
+// {
+// public:
+// 	FVertexDeclarationRHIRef VertexDeclarationRHI;
+// 
+// 	virtual void InitRHI() override
+// 	{
+// 		FVertexDeclarationElementList Elements;
+// 		uint32 Stride = sizeof(FTextureVertex);
+// 		Elements.Add(FVertexElement(0, STRUCT_OFFSET(FTextureVertex, Position), VET_Float4, 0, Stride));
+// 		Elements.Add(FVertexElement(0, STRUCT_OFFSET(FTextureVertex, UV), VET_Float2, 1, Stride));
+// 		VertexDeclarationRHI = RHICreateVertexDeclaration(Elements);
+// 	}
+// 
+// 	virtual void ReleaseRHI() override
+// 	{
+// 		VertexDeclarationRHI.SafeRelease();
+// 	}
+// }; 
 
 // It seems to be the convention to expose all vertex declarations as globals, and then reference them as externs in the headers where they are needed.
 // It kind of makes sense since they do not contain any parameters that change and are purely used as their names suggest, as declarations :)
-TGlobalResource<FTextureVertexDeclaration> GTextureVertexDeclaration;
+//TGlobalResource<FTextureVertexDeclaration> GTextureVertexDeclaration;
 
 /************************************************************************/
 /* A simple passthrough vertexshader that we will use.                  */
@@ -130,12 +130,11 @@ public:
 		return bShaderHasOutdatedParameters;
 	}
 
-	void SetParameters(FRHICommandList& CommandList, const FShaderUsageExampleParameters& DrawParameters, FRDGTextureRef ComputeShaderOutput)
+	void SetParameters(FRHICommandList& CommandList, const FShaderUsageExampleParameters& DrawParameters, FShaderResourceViewRHIRef ComputeShaderOutputSRV)
 	{
  		FPixelShaderUniformBuffer PixelShaderUniforms;
  		{
- 			//TODO: Iffy
- 			PixelShaderUniforms.ComputeShaderOutput = RHICreateShaderResourceView(ComputeShaderOutput->GetRHI(), 0);
+ 			PixelShaderUniforms.ComputeShaderOutput = ComputeShaderOutputSRV;
  			PixelShaderUniforms.StartColor = FVector4(DrawParameters.StartColor.R, DrawParameters.StartColor.G, DrawParameters.StartColor.B, DrawParameters.StartColor.A);
  			PixelShaderUniforms.EndColor = FVector4(DrawParameters.EndColor.R, DrawParameters.EndColor.G, DrawParameters.EndColor.B, DrawParameters.EndColor.A);
  			PixelShaderUniforms.BlendFactor = DrawParameters.ComputeShaderBlend;
@@ -151,28 +150,28 @@ public:
 IMPLEMENT_SHADER_TYPE(, FSimplePassThroughVS, TEXT("/Plugin/ShaderPlugin/Private/PixelShader.usf"), TEXT("MainVertexShader"), SF_Vertex);
 IMPLEMENT_SHADER_TYPE(, FPixelShaderExamplePS, TEXT("/Plugin/ShaderPlugin/Private/PixelShader.usf"), TEXT("MainPixelShader"), SF_Pixel);
 
-void FPixelShaderExample::DrawToRenderTarget_RenderThread(FRHICommandListImmediate& RHICmdList, const FShaderUsageExampleParameters& DrawParameters, FRDGTextureRef& ComputeShaderOutput)
+void FPixelShaderExample::DrawToRenderTarget_RenderThread(FRHICommandListImmediate& RHICmdList, const FShaderUsageExampleParameters& DrawParameters, FShaderResourceViewRHIRef ComputeShaderOutputSRV)
 {
 	FRHIRenderPassInfo RenderPassInfo(DrawParameters.RenderTarget->GetRenderTargetResource()->GetRenderTargetTexture(), ERenderTargetActions::Clear_Store);
 	RHICmdList.BeginRenderPass(RenderPassInfo, TEXT("ShaderPlugin_OutputToRenderTarget"));
 
 	auto ShaderMap = GetGlobalShaderMap(GMaxRHIFeatureLevel);
- 	TShaderMapRef<FSimplePassThroughVS> VertexShader(ShaderMap);
+	TShaderMapRef<FSimplePassThroughVS> VertexShader(ShaderMap);
  	TShaderMapRef<FPixelShaderExamplePS> PixelShader(ShaderMap);
  		
  	// Set the graphic pipeline state.
- 	FGraphicsPipelineStateInitializer GraphicsPSOInit;
+	FGraphicsPipelineStateInitializer GraphicsPSOInit;
 	RHICmdList.ApplyCachedRenderTargets(GraphicsPSOInit);
- 	GraphicsPSOInit.DepthStencilState = TStaticDepthStencilState<false, CF_Never>::GetRHI();
- 	GraphicsPSOInit.BlendState = TStaticBlendState<>::GetRHI();
- 	GraphicsPSOInit.RasterizerState = TStaticRasterizerState<>::GetRHI();
- 	GraphicsPSOInit.BoundShaderState.VertexDeclarationRHI = GTextureVertexDeclaration.VertexDeclarationRHI;
- 	GraphicsPSOInit.BoundShaderState.VertexShaderRHI = GETSAFERHISHADER_VERTEX(*VertexShader);
- 	GraphicsPSOInit.BoundShaderState.PixelShaderRHI = GETSAFERHISHADER_PIXEL(*PixelShader);
- 	GraphicsPSOInit.PrimitiveType = PT_TriangleList;
+	GraphicsPSOInit.BlendState = TStaticBlendState<>::GetRHI();
+	GraphicsPSOInit.RasterizerState = TStaticRasterizerState<>::GetRHI();
+	GraphicsPSOInit.DepthStencilState = TStaticDepthStencilState<false, CF_Always>::GetRHI();
+	GraphicsPSOInit.BoundShaderState.VertexDeclarationRHI = GFilterVertexDeclaration.VertexDeclarationRHI;
+	GraphicsPSOInit.BoundShaderState.VertexShaderRHI = GETSAFERHISHADER_VERTEX(*VertexShader);
+	GraphicsPSOInit.BoundShaderState.PixelShaderRHI = GETSAFERHISHADER_PIXEL(*PixelShader);
+	GraphicsPSOInit.PrimitiveType = PT_TriangleList;
  		
  	SetGraphicsPipelineState(RHICmdList, GraphicsPSOInit);
-	PixelShader->SetParameters(RHICmdList, DrawParameters, ComputeShaderOutput);
+	PixelShader->SetParameters(RHICmdList, DrawParameters, ComputeShaderOutputSRV);
  
  	FPixelShaderUtils::DrawFullscreenQuad(RHICmdList, 1);
 
