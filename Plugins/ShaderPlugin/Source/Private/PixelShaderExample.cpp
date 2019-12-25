@@ -98,6 +98,7 @@ public:
 		SHADER_PARAMETER_TEXTURE(Texture2D<uint>, ComputeShaderOutput)
 		SHADER_PARAMETER(FVector4, StartColor)
 		SHADER_PARAMETER(FVector4, EndColor)
+		SHADER_PARAMETER(FVector2D, TextureSize) // Metal doesn't support GetDimensions(), so we send in this data via our parameters.
 		SHADER_PARAMETER(float, BlendFactor)
 	END_SHADER_PARAMETER_STRUCT()
 
@@ -142,6 +143,7 @@ void FPixelShaderExample::DrawToRenderTarget_RenderThread(FRHICommandListImmedia
 	PassParameters.ComputeShaderOutput = ComputeShaderOutput;
 	PassParameters.StartColor = FVector4(DrawParameters.StartColor.R, DrawParameters.StartColor.G, DrawParameters.StartColor.B, DrawParameters.StartColor.A) / 255.0f;
 	PassParameters.EndColor = FVector4(DrawParameters.EndColor.R, DrawParameters.EndColor.G, DrawParameters.EndColor.B, DrawParameters.EndColor.A) / 255.0f;
+	PassParameters.TextureSize = FVector2D(DrawParameters.GetRenderTargetSize().X, DrawParameters.GetRenderTargetSize().Y);
 	PassParameters.BlendFactor = DrawParameters.ComputeShaderBlend;	
 	SetShaderParameters(RHICmdList, *PixelShader, PixelShader->GetPixelShader(), PassParameters);
 	

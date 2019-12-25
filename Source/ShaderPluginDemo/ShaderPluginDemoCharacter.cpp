@@ -34,9 +34,6 @@
 #include "Kismet/GameplayStatics.h"
 #include "Runtime/Engine/Classes/Materials/MaterialInstanceDynamic.h"
 
-// Clean code
-// Implement PR code from contributors
-
 AShaderPluginDemoCharacter::AShaderPluginDemoCharacter() 
 {
 	GetCapsuleComponent()->InitCapsuleSize(55.f, 96.0f);
@@ -118,7 +115,7 @@ void AShaderPluginDemoCharacter::Tick(float DeltaSeconds)
 	}
 
 	// If doing this for realsies, you should avoid doing this every frame unless you have to of course.
-	// We set it every frame here since we're updating the end color. Boop.
+	// We set it every frame here since we're updating the end color and simulation state. Boop.
 	FShaderPluginModule::Get().UpdateParameters(DrawParameters);
 }
 
@@ -134,11 +131,11 @@ void AShaderPluginDemoCharacter::OnFire()
 
 	if (GetWorld()->LineTraceSingleByChannel(HitResult, StartLocation, EndLocation, ECC_Visibility, QueryParams))
 	{
-		TArray<UStaticMeshComponent*> StaticMeshComponents = TArray<UStaticMeshComponent*>();
 		AActor* HitActor = HitResult.GetActor();
 
-		if (nullptr != HitActor)
+		if (HitActor)
 		{
+			TArray<UStaticMeshComponent*> StaticMeshComponents = TArray<UStaticMeshComponent*>();
 			HitActor->GetComponents<UStaticMeshComponent>(StaticMeshComponents);
 
 			for (int32 i = 0; i < StaticMeshComponents.Num(); i++) 

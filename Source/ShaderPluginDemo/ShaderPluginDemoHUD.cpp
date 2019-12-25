@@ -27,6 +27,7 @@
 #include "Engine/Canvas.h"
 #include "TextureResource.h"
 #include "CanvasItem.h"
+#include "Engine/Engine.h"
 
 AShaderPluginDemoHUD::AShaderPluginDemoHUD()
 {
@@ -38,10 +39,16 @@ AShaderPluginDemoHUD::AShaderPluginDemoHUD()
 void AShaderPluginDemoHUD::DrawHUD()
 {
 	Super::DrawHUD();
+
+	// Crosshair
 	const FVector2D Center(Canvas->ClipX * 0.5f, Canvas->ClipY * 0.5f);
 	const FVector2D CrosshairDrawPosition((Center.X - (CrosshairTex->GetSurfaceWidth() * 0.5)), (Center.Y - (CrosshairTex->GetSurfaceHeight() * 0.5f)));
 
 	FCanvasTileItem TileItem( CrosshairDrawPosition, CrosshairTex->Resource, FLinearColor::White);
 	TileItem.BlendMode = SE_BLEND_Translucent;
 	Canvas->DrawItem( TileItem );
+
+	// Help text
+	Canvas->SetDrawColor(FColor::Green);
+	Canvas->DrawText(GEngine->GetLargeFont(), FText::FromString("Shoot stuff to apply custom shader output!\nHold E / Q to change color blend."), 20.0f, 100.0f, 3.0f, 3.0f);
 }

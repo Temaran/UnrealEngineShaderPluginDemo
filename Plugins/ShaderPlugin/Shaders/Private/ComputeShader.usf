@@ -5,17 +5,15 @@
 //
 // HLSL translation and parameterization by Temaran
 
-float SimulationState;
 RWTexture2D<uint> OutputTexture;
+float2 TextureSize;
+float SimulationState;
 
 [numthreads(THREADGROUPSIZE_X, THREADGROUPSIZE_Y, THREADGROUPSIZE_Z)]
 void MainComputeShader(uint3 ThreadId : SV_DispatchThreadID)
 {
 	// Set up some variables we are going to need
-	float sizeX, sizeY;
-	OutputTexture.GetDimensions(sizeX, sizeY);
-
-	float2 iResolution = float2(sizeX, sizeY);
+	float2 iResolution = float2(TextureSize.x, TextureSize.y);
 	float2 uv = (ThreadId.xy / iResolution.xy) - 0.5;
 	float iGlobalTime = SimulationState;
 

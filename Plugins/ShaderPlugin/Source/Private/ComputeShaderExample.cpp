@@ -46,6 +46,7 @@ public:
 
 	BEGIN_SHADER_PARAMETER_STRUCT(FParameters, )
 		SHADER_PARAMETER_UAV(RWTexture2D<uint>, OutputTexture)
+		SHADER_PARAMETER(FVector2D, TextureSize) // Metal doesn't support GetDimensions(), so we send in this data via our parameters.
 		SHADER_PARAMETER(float, SimulationState)
 	END_SHADER_PARAMETER_STRUCT()
 
@@ -79,6 +80,7 @@ void FComputeShaderExample::RunComputeShader_RenderThread(FRHICommandListImmedia
 	
 	FComputeShaderExampleCS::FParameters PassParameters;
 	PassParameters.OutputTexture = ComputeShaderOutputUAV;
+	PassParameters.TextureSize = FVector2D(DrawParameters.GetRenderTargetSize().X, DrawParameters.GetRenderTargetSize().Y);
 	PassParameters.SimulationState = DrawParameters.SimulationState;
 
 	TShaderMapRef<FComputeShaderExampleCS> ComputeShader(GetGlobalShaderMap(GMaxRHIFeatureLevel));
