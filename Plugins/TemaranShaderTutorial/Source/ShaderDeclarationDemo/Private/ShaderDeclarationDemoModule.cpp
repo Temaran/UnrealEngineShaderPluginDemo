@@ -51,7 +51,7 @@ void FShaderDeclarationDemoModule::BeginRendering()
 	IRendererModule* RendererModule = FModuleManager::GetModulePtr<IRendererModule>(RendererModuleName);
 	if (RendererModule)
 	{
-		OnPostResolvedSceneColorHandle = RendererModule->GetResolvedSceneColorCallbacks().AddRaw(this, &FShaderDeclarationDemoModule::DrawEveryFrame_RenderThread);
+		OnPostResolvedSceneColorHandle = RendererModule->GetResolvedSceneColorCallbacks().AddRaw(this, &FShaderDeclarationDemoModule::PostResolveSceneColor_RenderThread);
 	}
 }
 
@@ -80,7 +80,7 @@ void FShaderDeclarationDemoModule::UpdateParameters(FShaderUsageExampleParameter
 	RenderEveryFrameLock.Unlock();
 }
 
-void FShaderDeclarationDemoModule::DrawEveryFrame_RenderThread(FRHICommandListImmediate& RHICmdList, class FSceneRenderTargets& SceneContext)
+void FShaderDeclarationDemoModule::PostResolveSceneColor_RenderThread(FRHICommandListImmediate& RHICmdList, class FSceneRenderTargets& SceneContext)
 {
 	if (!bCachedParametersValid)
 	{
