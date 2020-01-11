@@ -1,23 +1,32 @@
 {
-  "FileVersion" : 3,
-	"Version" : 1,
-	"VersionName" : "1.0",	
-	"FriendlyName" : "Shader Plugin",
-	"Description" : "A plugin containing shaders. Intended to be used to understand in simple terms how to make your own shader plugins in UE4.",
-	"Category" : "Temaran",
-	"CreatedBy" : "Temaran",
-	"CreatedByURL" : "https://github.com/Temaran",
-	"EngineVersion" : "4.24.0",
-	"CanContainContent": true,
-	"IsBetaVersion": true,
-	"Installed": false,
-	
-  "Modules" :
-	[
-		{
-			"Name" : "ShaderPlugin",
-			"Type" : "Runtime",
-			"LoadingPhase" : "PostConfigInit"
-		}
-	]
+  "FileVersion": 3,
+  "Version": 1,
+  "VersionName": "1.0",
+  "FriendlyName": "Shader Plugin",
+  "Description": "A plugin containing shaders. Intended to be used to understand in simple terms how to make your own shader plugins in UE4.",
+  "Category": "Temaran",
+  "CreatedBy": "Temaran",
+  "CreatedByURL": "https://github.com/Temaran",
+  "MarketplaceURL": "com.epicgames.launcher://ue/marketplace/content/d093d65debd844e1a91058ff52385367",
+  "EngineVersion": "4.24.0",
+  "CanContainContent": true,
+  "IsBetaVersion": true,
+  "Installed": false,
+  "EnabledByDefault": true,
+
+  "Modules": 
+  [
+    {
+      "Name": "ShaderDeclarationDemo",
+      "Type": "Runtime",
+      "LoadingPhase": "PostConfigInit",
+      "WhitelistPlatforms": [ "Win64", "Win32" ]
+    },
+    {
+      "Name": "ShaderUsageDemo",
+      "Type": "Runtime",
+      "LoadingPhase": "Default",
+      "WhitelistPlatforms": [ "Win64", "Win32" ]
+    }
+  ]
 }
