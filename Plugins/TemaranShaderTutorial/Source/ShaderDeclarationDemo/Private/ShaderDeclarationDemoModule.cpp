@@ -15,6 +15,7 @@
 #include "RenderGraphBuilder.h"
 #include "RenderTargetPool.h"
 #include "Runtime/Core/Public/Modules/ModuleManager.h"
+#include "Interfaces/IPluginManager.h"
 
 IMPLEMENT_MODULE(FShaderDeclarationDemoModule, ShaderDeclarationDemo)
 
@@ -29,7 +30,7 @@ void FShaderDeclarationDemoModule::StartupModule()
 	bCachedParametersValid = false;
 
 	// Maps virtual shader source directory to the plugin's actual shaders directory.
-	FString PluginShaderDir = FPaths::Combine(FPaths::ProjectPluginsDir(), TEXT("TemaranShaderTutorial/Shaders"));
+	FString PluginShaderDir = FPaths::Combine(IPluginManager::Get().FindPlugin(TEXT("TemaranShaderTutorial"))->GetBaseDir(), TEXT("Shaders"));
 	AddShaderSourceDirectoryMapping(TEXT("/TutorialShaders"), PluginShaderDir);
 }
 
