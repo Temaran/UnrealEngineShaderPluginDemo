@@ -130,9 +130,9 @@ void FPixelShaderExample::DrawToRenderTarget_RenderThread(FRHICommandListImmedia
 	// Draw
 	RHICmdList.SetStreamSource(0, GSimpleScreenVertexBuffer.VertexBufferRHI, 0);
 	RHICmdList.DrawPrimitive(0, 2, 1);
-	
-	// Resolve render target
-	RHICmdList.CopyToResolveTarget(DrawParameters.RenderTarget->GetRenderTargetResource()->GetRenderTargetTexture(), DrawParameters.RenderTarget->GetRenderTargetResource()->TextureRHI, FResolveParams());
 
 	RHICmdList.EndRenderPass();
+
+	// Resolve render target
+	RHICmdList.CopyToResolveTarget(DrawParameters.RenderTarget->GetRenderTargetResource()->GetRenderTargetTexture(), DrawParameters.RenderTarget->GetRenderTargetResource()->TextureRHI, FResolveParams());
 }
