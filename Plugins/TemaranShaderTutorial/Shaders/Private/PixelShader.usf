@@ -5,6 +5,8 @@
 // VERTEX SHADER
 ////////////////
 
+#include "/Engine/Public/Platform.ush"
+
 void MainVertexShader(float4 InPosition : ATTRIBUTE0, float2 InUV : ATTRIBUTE1, out float2 OutUV : TEXCOORD0, out float4 OutPosition : SV_POSITION)
 {
 	OutPosition = InPosition;
