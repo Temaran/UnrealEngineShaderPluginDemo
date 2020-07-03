@@ -5,6 +5,8 @@
 //
 // HLSL translation and parameterization by Temaran
 
+#include "/Engine/Public/Platform.ush"
+
 RWTexture2D<uint> OutputTexture;
 float2 TextureSize;
 float SimulationState;

@@ -2,6 +2,8 @@
 // @Author	Fredrik Lindh [Temaran] (temaran@gmail.com) {https://github.com/Temaran}
 ///////////////////////////////////////////////////////////////////////////////////////
 
+#include "/Engine/Public/Platform.ush"
+
 // VERTEX SHADER
 ////////////////
 
