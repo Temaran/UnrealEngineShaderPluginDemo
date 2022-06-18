@@ -100,6 +100,7 @@ private:
 	FCriticalSection RenderEveryFrameLock;
 	volatile bool bCachedParametersValid;
 
-	void PostResolveSceneColor_RenderThread(FRHICommandListImmediate& RHICmdList, class FSceneRenderTargets& SceneContext);
+	void PostResolveSceneColor_RenderThread(FRDGBuilder& builder, const FSceneTextures& SceneTexture);
+
 	void Draw_RenderThread(const FShaderUsageExampleParameters& DrawParameters);
 };
