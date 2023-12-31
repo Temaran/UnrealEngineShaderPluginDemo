@@ -1,4 +1,3 @@
-// Copyright 2016-2020 Cadic AB. All Rights Reserved.
 // @Author	Fredrik Lindh [Temaran] (temaran@gmail.com) {https://github.com/Temaran}
 ///////////////////////////////////////////////////////////////////////////////////////
 
@@ -26,7 +25,7 @@ DECLARE_GPU_STAT_NAMED(ShaderPlugin_Pixel, TEXT("ShaderPlugin: Render Pixel Shad
 
 void FShaderDeclarationDemoModule::StartupModule()
 {
-	OnPostResolvedSceneColorHandle.Reset();
+	PreRenderHandle.Reset();
 	bCachedParametersValid = false;
 
 	// Maps virtual shader source directory to the plugin's actual shaders directory.
@@ -41,48 +40,38 @@ void FShaderDeclarationDemoModule::ShutdownModule()
 
 void FShaderDeclarationDemoModule::BeginRendering()
 {
-	if (OnPostResolvedSceneColorHandle.IsValid())
+	if (PreRenderHandle.IsValid() || !GEngine)
 	{
 		return;
 	}
 
 	bCachedParametersValid = false;
-
-	const FName RendererModuleName("Renderer");
-	IRendererModule* RendererModule = FModuleManager::GetModulePtr<IRendererModule>(RendererModuleName);
-	if (RendererModule)
-	{
-		OnPostResolvedSceneColorHandle = RendererModule->GetResolvedSceneColorCallbacks().AddRaw(this, &FShaderDeclarationDemoModule::PostResolveSceneColor_RenderThread);
-	}
+	PreRenderHandle = GEngine->GetPreRenderDelegateEx().AddRaw(this, &FShaderDeclarationDemoModule::HandlePreRender_RenderThread);
 }
 
 void FShaderDeclarationDemoModule::EndRendering()
 {
-	if (!OnPostResolvedSceneColorHandle.IsValid())
+	if (!PreRenderHandle.IsValid() || !GEngine)
 	{
 		return;
 	}
 
-	const FName RendererModuleName("Renderer");
-	IRendererModule* RendererModule = FModuleManager::GetModulePtr<IRendererModule>(RendererModuleName);
-	if (RendererModule)
-	{
-		RendererModule->GetResolvedSceneColorCallbacks().Remove(OnPostResolvedSceneColorHandle);
-	}
-
-	OnPostResolvedSceneColorHandle.Reset();
+	GEngine->GetPreRenderDelegateEx().Remove(PreRenderHandle);
+	PreRenderHandle.Reset();
 }
 
 void FShaderDeclarationDemoModule::UpdateParameters(FShaderUsageExampleParameters& DrawParameters)
 {
-	RenderEveryFrameLock.Lock();
+	FScopeLock UpdateLock(&RenderEveryFrameLock);
+
 	CachedShaderUsageExampleParameters = DrawParameters;
 	bCachedParametersValid = true;
-	RenderEveryFrameLock.Unlock();
 }
 
-void FShaderDeclarationDemoModule::PostResolveSceneColor_RenderThread(FRHICommandListImmediate& RHICmdList, class FSceneRenderTargets& SceneContext)
+void FShaderDeclarationDemoModule::HandlePreRender_RenderThread(FRDGBuilder& RDGBuilder)
 {
+	check(IsInRenderingThread());
+
 	if (!bCachedParametersValid)
 	{
 		return;
@@ -90,33 +79,22 @@ void FShaderDeclarationDemoModule::PostResolveSceneColor_RenderThread(FRHIComman
 
 	// Depending on your data, you might not have to lock here, just added this code to show how you can do it if you have to.
 	RenderEveryFrameLock.Lock();
-	FShaderUsageExampleParameters Copy = CachedShaderUsageExampleParameters;
+	FShaderUsageExampleParameters DrawParameters = CachedShaderUsageExampleParameters;
 	RenderEveryFrameLock.Unlock();
 
-	Draw_RenderThread(Copy);
-}
-
-void FShaderDeclarationDemoModule::Draw_RenderThread(const FShaderUsageExampleParameters& DrawParameters)
-{
-	check(IsInRenderingThread());
-
+	// Let's draw our effects!
 	if (!DrawParameters.RenderTarget)
 	{
 		return;
 	}
 
-	FRHICommandListImmediate& RHICmdList = GRHICommandList.GetImmediateCommandList();
+	QUICK_SCOPE_CYCLE_COUNTER(STAT_ShaderPlugin_Render); // Used to gather CPU profiling data for Unreal Insights! Insights is a really powerful tool for debugging CPU stats, memory and networking.
+	SCOPED_DRAW_EVENT(RDGBuilder.RHICmdList, ShaderPlugin_Render); // Used to profile GPU activity and add metadata to be consumed by for example RenderDoc
 
-	QUICK_SCOPE_CYCLE_COUNTER(STAT_ShaderPlugin_Render); // Used to gather CPU profiling data for the UE4 session frontend
-	SCOPED_DRAW_EVENT(RHICmdList, ShaderPlugin_Render); // Used to profile GPU activity and add metadata to be consumed by for example RenderDoc
+	// The graph will help us figure out when the GPU memory is needed, and only have it allocated from then, so this makes memory management a lot easier and nicer!
+	FRDGTextureDesc ComputeShaderOutputDesc = FRDGTextureDesc::Create2D(DrawParameters.GetRenderTargetSize(), EPixelFormat::PF_R32_UINT, FClearValueBinding::None, ETextureCreateFlags::RenderTargetable | ETextureCreateFlags::UAV | ETextureCreateFlags::ShaderResource);
+	FRDGTextureRef OutputTexture = RDGBuilder.CreateTexture(ComputeShaderOutputDesc, TEXT("ShaderPlugin_ComputeShaderOutput"), ERDGTextureFlags::None);
 
-	if (!ComputeShaderOutput.IsValid())
-	{
-		FPooledRenderTargetDesc ComputeShaderOutputDesc(FPooledRenderTargetDesc::Create2DDesc(DrawParameters.GetRenderTargetSize(), PF_R32_UINT, FClearValueBinding::None, TexCreate_None, TexCreate_ShaderResource | TexCreate_UAV, false));
-		ComputeShaderOutputDesc.DebugName = TEXT("ShaderPlugin_ComputeShaderOutput");
-		GRenderTargetPool.FindFreeElement(RHICmdList, ComputeShaderOutputDesc, ComputeShaderOutput, TEXT("ShaderPlugin_ComputeShaderOutput"));
-	}
-
-	FComputeShaderExample::RunComputeShader_RenderThread(RHICmdList, DrawParameters, ComputeShaderOutput->GetRenderTargetItem().UAV);
-	FPixelShaderExample::DrawToRenderTarget_RenderThread(RHICmdList, DrawParameters, ComputeShaderOutput->GetRenderTargetItem().TargetableTexture);
+	FComputeShaderExample::RunComputeShader_RenderThread(RDGBuilder, DrawParameters, RDGBuilder.CreateUAV(OutputTexture));
+	FPixelShaderExample::DrawToRenderTarget_RenderThread(RDGBuilder, DrawParameters, RDGBuilder.CreateSRV(OutputTexture));
 }

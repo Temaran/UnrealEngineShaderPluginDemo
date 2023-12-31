@@ -1,4 +1,3 @@
-// Copyright 2016-2020 Cadic AB. All Rights Reserved.
 // @Author	Fredrik Lindh [Temaran] (temaran@gmail.com) {https://github.com/Temaran}
 ///////////////////////////////////////////////////////////////////////////////////////
 
@@ -13,5 +12,5 @@
 class FComputeShaderExample
 {
 public:
-	static void RunComputeShader_RenderThread(FRHICommandListImmediate& RHICmdList, const FShaderUsageExampleParameters& DrawParameters, FUnorderedAccessViewRHIRef ComputeShaderOutputUAV);
+	static void RunComputeShader_RenderThread(FRDGBuilder& RDGBuilder, const FShaderUsageExampleParameters& DrawParameters, FRDGTextureUAVRef OutputTextureUAV);
 };

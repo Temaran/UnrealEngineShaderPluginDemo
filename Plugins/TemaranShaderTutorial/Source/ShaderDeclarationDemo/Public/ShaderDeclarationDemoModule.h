@@ -1,4 +1,3 @@
-// Copyright 2016-2020 Cadic AB. All Rights Reserved.
 // @Author	Fredrik Lindh [Temaran] (temaran@gmail.com) {https://github.com/Temaran}
 ///////////////////////////////////////////////////////////////////////////////////////
 
@@ -96,10 +95,9 @@ public:
 private:
 	TRefCountPtr<IPooledRenderTarget> ComputeShaderOutput;
 	FShaderUsageExampleParameters CachedShaderUsageExampleParameters;
-	FDelegateHandle OnPostResolvedSceneColorHandle;
+	FDelegateHandle PreRenderHandle;
 	FCriticalSection RenderEveryFrameLock;
 	volatile bool bCachedParametersValid;
 
-	void PostResolveSceneColor_RenderThread(FRHICommandListImmediate& RHICmdList, class FSceneRenderTargets& SceneContext);
-	void Draw_RenderThread(const FShaderUsageExampleParameters& DrawParameters);
+	void HandlePreRender_RenderThread(class FRDGBuilder& RDGBuilder);
 };
