@@ -28,20 +28,20 @@ public:
 		TResourceArray<FFilterVertex, VERTEXBUFFER_ALIGNMENT> Vertices;
 		Vertices.SetNumUninitialized(6);
 
-		Vertices[0].Position = FVector4(-1, 1, 0, 1);
-		Vertices[0].UV = FVector2D(0, 0);
+		Vertices[0].Position = FVector4f(-1, 1, 0, 1);
+		Vertices[0].UV = FVector2f(0, 0);
 
-		Vertices[1].Position = FVector4(1, 1, 0, 1);
-		Vertices[1].UV = FVector2D(1, 0);
+		Vertices[1].Position = FVector4f(1, 1, 0, 1);
+		Vertices[1].UV = FVector2f(1, 0);
 
-		Vertices[2].Position = FVector4(-1, -1, 0, 1);
-		Vertices[2].UV = FVector2D(0, 1);
+		Vertices[2].Position = FVector4f(-1, -1, 0, 1);
+		Vertices[2].UV = FVector2f(0, 1);
 
-		Vertices[3].Position = FVector4(1, -1, 0, 1);
-		Vertices[3].UV = FVector2D(1, 1);
+		Vertices[3].Position = FVector4f(1, -1, 0, 1);
+		Vertices[3].UV = FVector2f(1, 1);
 
 		// Create vertex buffer. Fill buffer with initial data upon creation
-		FRHIResourceCreateInfo CreateInfo(&Vertices);
+		FRHIResourceCreateInfo CreateInfo(TEXT("FRHIResourceCreateInfo"),  & Vertices);
 		VertexBufferRHI = RHICreateVertexBuffer(Vertices.GetResourceDataSize(), BUF_Static, CreateInfo);
 	}
 };
@@ -76,9 +76,9 @@ public:
 
 	BEGIN_SHADER_PARAMETER_STRUCT(FParameters, )
 		SHADER_PARAMETER_TEXTURE(Texture2D<uint>, ComputeShaderOutput)
-		SHADER_PARAMETER(FVector4, StartColor)
-		SHADER_PARAMETER(FVector4, EndColor)
-		SHADER_PARAMETER(FVector2D, TextureSize) // Metal doesn't support GetDimensions(), so we send in this data via our parameters.
+		SHADER_PARAMETER(FVector4f, StartColor)
+		SHADER_PARAMETER(FVector4f, EndColor)
+		SHADER_PARAMETER(FVector2f, TextureSize) // Metal doesn't support GetDimensions(), so we send in this data via our parameters.
 		SHADER_PARAMETER(float, BlendFactor)
 	END_SHADER_PARAMETER_STRUCT()
 
@@ -116,14 +116,14 @@ void FPixelShaderExample::DrawToRenderTarget_RenderThread(FRHICommandListImmedia
 	GraphicsPSOInit.BoundShaderState.VertexShaderRHI = VertexShader.GetVertexShader();
 	GraphicsPSOInit.BoundShaderState.PixelShaderRHI = PixelShader.GetPixelShader();
 	GraphicsPSOInit.PrimitiveType = PT_TriangleStrip;
-	SetGraphicsPipelineState(RHICmdList, GraphicsPSOInit);
+	SetGraphicsPipelineState(RHICmdList, GraphicsPSOInit, 0);
 	
 	// Setup the pixel shader
 	FPixelShaderExamplePS::FParameters PassParameters; 
 	PassParameters.ComputeShaderOutput = ComputeShaderOutput;
-	PassParameters.StartColor = FVector4(DrawParameters.StartColor.R, DrawParameters.StartColor.G, DrawParameters.StartColor.B, DrawParameters.StartColor.A) / 255.0f;
-	PassParameters.EndColor = FVector4(DrawParameters.EndColor.R, DrawParameters.EndColor.G, DrawParameters.EndColor.B, DrawParameters.EndColor.A) / 255.0f;
-	PassParameters.TextureSize = FVector2D(DrawParameters.GetRenderTargetSize().X, DrawParameters.GetRenderTargetSize().Y);
+	PassParameters.StartColor = FVector4f(DrawParameters.StartColor.R, DrawParameters.StartColor.G, DrawParameters.StartColor.B, DrawParameters.StartColor.A) / 255.0f;
+	PassParameters.EndColor = FVector4f(DrawParameters.EndColor.R, DrawParameters.EndColor.G, DrawParameters.EndColor.B, DrawParameters.EndColor.A) / 255.0f;
+	PassParameters.TextureSize = FVector2f(DrawParameters.GetRenderTargetSize().X, DrawParameters.GetRenderTargetSize().Y);
 	PassParameters.BlendFactor = DrawParameters.ComputeShaderBlend;	
 	SetShaderParameters(RHICmdList, PixelShader, PixelShader.GetPixelShader(), PassParameters);
 	

@@ -81,7 +81,7 @@ void FShaderDeclarationDemoModule::UpdateParameters(FShaderUsageExampleParameter
 	RenderEveryFrameLock.Unlock();
 }
 
-void FShaderDeclarationDemoModule::PostResolveSceneColor_RenderThread(FRHICommandListImmediate& RHICmdList, class FSceneRenderTargets& SceneContext)
+void FShaderDeclarationDemoModule::PostResolveSceneColor_RenderThread(FRDGBuilder& builder, const FSceneTextures& SceneTexture)
 {
 	if (!bCachedParametersValid)
 	{
