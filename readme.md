@@ -1,11 +1,19 @@
 # Hello!
 
-It's been a while! I've been meaning to update this to more modern standards for quite some time but have never really taken the time to do it until now.
-Thanks to everyone who have been helping out, updating the plugin to newer versions of the engine! Super thanks to Valentin Kraft and Umax1004 for doing some of the larger version updates :)
+The project has now been updated to 5.3, but there have also been several contributions and fixes to earlier branches.
+
+Big thanks to everyone who has helped out with this!
+@tomotaco
+@thescratt
+@darksylinc
+@patlj09
+@Umax1004
+@ValentinKraft
+@Boonto
 
 ------
 
-This project is a tutorial project for how to create shaders in UE4. There are branches for some major versions, but not all. If you are working on an older version of the engine, please try and find the branch that best fits your needs! 
+This project is a tutorial project for how to create shaders in UE5. There are branches for some major versions, but not all. If you are working on an older version of the engine, please try and find the branch that best fits your needs! 
 
 Most material effects can be created in-editor using the excellent tools that Epic has provided us with. There are some times though, where you simply want to work directly with the graphics API, or UE4's excellent RHI abstraction. This plugin attempts to help you get to that point as quickly as possible.
 It is worth to note that this is not a tutorial on how to program shaders in general, or how to write HLSL, but rather how to get shaders working in UE4. For learning how to program shaders or HLSL, I recommend other resources,
