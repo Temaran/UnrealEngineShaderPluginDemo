@@ -1,8 +1,10 @@
 # Hello!
 
-The project has now been updated to 5.3, but there have also been several contributions and fixes to earlier branches.
+The project has now been updated to UE 5.3, using the RenderGraph API to stay in line with the rest of the engine.
 
-Big thanks to everyone who has helped out with this!
+
+There has also been several contributions and fixes to earlier branches however, and I'd be remiss not to thank everyone who has helped out!
+
 @tomotaco
 @thescratt
 @darksylinc
