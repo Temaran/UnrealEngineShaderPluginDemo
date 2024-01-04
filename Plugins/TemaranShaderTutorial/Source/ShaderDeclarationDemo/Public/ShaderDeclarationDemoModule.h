@@ -14,11 +14,15 @@
 // This struct contains all the data we need to pass from the game thread to draw our effect.
 struct FShaderUsageExampleParameters
 {
+	// For Galaxy Simulation.
 	UTextureRenderTarget2D* RenderTarget;
 	FColor StartColor;
 	FColor EndColor;
 	float SimulationState;
 	float ComputeShaderBlend;
+
+	// For array summation shader.
+	TMap<int32, TArray<int32>> IntegerSummationRequests;
 	
 	FIntPoint GetRenderTargetSize() const
 	{
@@ -31,12 +35,35 @@ struct FShaderUsageExampleParameters
 		, StartColor(FColor::White)
 		, EndColor(FColor::White)
 		, SimulationState(1.0f)
+		, IntegerSummationRequests()
 	{
 		CachedRenderTargetSize = RenderTarget ? FIntPoint(RenderTarget->SizeX, RenderTarget->SizeY) : FIntPoint::ZeroValue;
 	}
 
 private:
 	FIntPoint CachedRenderTargetSize;
+};
+
+struct FIntegerSummationResult
+{
+	FRHIGPUBufferReadback Readback;
+	int32 NrWorkGroups;
+	int32 Result;
+	bool bReadbackComplete;
+
+	FIntegerSummationResult()
+		: Readback(TEXT("ReduceSumReadback"))
+		, NrWorkGroups(0)
+		, Result(-1)
+		, bReadbackComplete(false)
+	{
+	}
+};
+
+struct FIntegerSummationWorkSet
+{
+	TMap<int32, FIntegerSummationResult> ReduceSummationWork; 
+	FCriticalSection WorkSetLock;
 };
 
 /*
@@ -92,11 +119,13 @@ public:
 	// different intervals to save on locking and GPU transfer time.
 	void UpdateParameters(FShaderUsageExampleParameters& DrawParameters);
 
+	// We can pick up completed summation results with this method. It will sync the game and render thread though, so be aware of that.
+	void GetCompletedSummationRequests(TMap<int32, FIntegerSummationResult>& OutNewCompletedResults);
+
 private:
-	TRefCountPtr<IPooledRenderTarget> ComputeShaderOutput;
 	FShaderUsageExampleParameters CachedShaderUsageExampleParameters;
-	FDelegateHandle PreRenderHandle;
-	FCriticalSection RenderEveryFrameLock;
+	FIntegerSummationWorkSet ReduceSummationWorkSet;
+	FCriticalSection InputLock;
 	volatile bool bCachedParametersValid;
 
 	void HandlePreRender_RenderThread(class FRDGBuilder& RDGBuilder);

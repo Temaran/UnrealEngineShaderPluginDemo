@@ -1,0 +1,53 @@
+// Base shader origin:
+// https://github.com/microsoft/DirectX-Graphics-Samples/blob/master/Samples/Desktop/D3D12Raytracing/src/D3D12RaytracingRealTimeDenoisedAmbientOcclusion/SampleCore/Shaders/util/ReduceSumFloatCS.hlsl
+//
+// UE adaptation by Temaran
+
+#include "/Engine/Public/Platform.ush"
+
+StructuredBuffer<int> InputBuffer;
+RWStructuredBuffer<int> OutputBuffer;
+uint InputBufferLength;
+
+groupshared int ReductionGroupShared[THREADGROUPSIZE_X];
+
+// Simple reduce sum compute shader.
+[numthreads(THREADGROUPSIZE_X, 1, 1)]
+void ReduceSum(uint DataIndex : SV_DispatchThreadID, uint GIndex: SV_GroupIndex, uint Gid : SV_GroupID)
+{
+	if (DataIndex >= InputBufferLength)
+	{
+		return;
+	}
+
+	uint ThreadGroupSize = THREADGROUPSIZE_X;
+	int Sum = InputBuffer[DataIndex];
+
+	// Aggregate values across the wave.
+	Sum = WaveActiveSum(Sum);
+
+	// Aggregate values across the whole group.
+	for (uint LaneStep = WaveGetLaneCount(); LaneStep < ThreadGroupSize; LaneStep *= WaveGetLaneCount())
+	{
+		// Store the value in the group shared memory and wait for all threads in group to finish.
+		ReductionGroupShared[GIndex] = Sum;
+		GroupMemoryBarrierWithGroupSync();
+
+		// Let through only so many lanes as there are unique sum values from the last store.
+		uint NumLanesToProcess = (ThreadGroupSize + LaneStep - 1) / LaneStep;
+		if (GIndex >= NumLanesToProcess)
+		{
+			break;
+		}
+
+		// Here we basically move the first unique value of each set of wave sums to the start of the array for the next iteration.
+		Sum = ReductionGroupShared[GIndex * WaveGetLaneCount()];
+		Sum = WaveActiveSum(Sum);
+	}
+
+	// Write out summed result for each thread group.
+	if (GIndex == 0)
+	{
+		OutputBuffer[Gid] = Sum;
+	}
+}

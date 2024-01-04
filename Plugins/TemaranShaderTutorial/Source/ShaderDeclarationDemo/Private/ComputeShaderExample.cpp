@@ -17,11 +17,11 @@
 /**********************************************************************************************/
 /* This class carries our parameter declarations and acts as the bridge between cpp and HLSL. */
 /**********************************************************************************************/
-class FComputeShaderExampleCS : public FGlobalShader
+class FGalaxySimulatorExampleCS : public FGlobalShader
 {
 public:
-	DECLARE_GLOBAL_SHADER(FComputeShaderExampleCS);
-	SHADER_USE_PARAMETER_STRUCT(FComputeShaderExampleCS, FGlobalShader);
+	DECLARE_GLOBAL_SHADER(FGalaxySimulatorExampleCS);
+	SHADER_USE_PARAMETER_STRUCT(FGalaxySimulatorExampleCS, FGlobalShader);
 
 	BEGIN_SHADER_PARAMETER_STRUCT(FParameters, )
 		SHADER_PARAMETER_RDG_TEXTURE_UAV(RWTexture2D<uint>, OutputTexture)
@@ -45,25 +45,142 @@ public:
 	}
 };
 
-// This will tell the engine to create the shader and where the shader entry point is.
-//                            ShaderType                            ShaderPath                     Shader function name    Type
-IMPLEMENT_GLOBAL_SHADER(FComputeShaderExampleCS, "/TutorialShaders/Private/ComputeShader.usf", "MainComputeShader", SF_Compute);
-
-void FComputeShaderExample::RunComputeShader_RenderThread(FRDGBuilder& RDGBuilder, const FShaderUsageExampleParameters& DrawParameters, FRDGTextureUAVRef OutputTextureUAV)
+// Here is another, smaller compute shader that illustrates how to push data to the GPU, and how to read it back!
+class FReduceSumExampleCS : public FGlobalShader
 {
-	QUICK_SCOPE_CYCLE_COUNTER(STAT_ShaderPlugin_ComputeShader); // Used to gather CPU profiling data for Unreal Insights.
+public:
+	DECLARE_GLOBAL_SHADER(FReduceSumExampleCS);
+	SHADER_USE_PARAMETER_STRUCT(FReduceSumExampleCS, FGlobalShader);
+
+	BEGIN_SHADER_PARAMETER_STRUCT(FParameters, )
+		SHADER_PARAMETER_RDG_BUFFER_SRV(StructuredBuffer<int32>, InputBuffer)
+		SHADER_PARAMETER_RDG_BUFFER_UAV(RWStructuredBuffer<int32>, OutputBuffer)
+		SHADER_PARAMETER(uint32, InputBufferLength)
+	END_SHADER_PARAMETER_STRUCT()
+
+public:
+	static bool ShouldCompilePermutation(const FGlobalShaderPermutationParameters& Parameters)
+	{
+		return IsFeatureLevelSupported(Parameters.Platform, ERHIFeatureLevel::SM6);
+	}
+
+	static inline void ModifyCompilationEnvironment(const FGlobalShaderPermutationParameters& Parameters, FShaderCompilerEnvironment& OutEnvironment)
+	{
+		FGlobalShader::ModifyCompilationEnvironment(Parameters, OutEnvironment);
+
+		OutEnvironment.SetDefine(TEXT("THREADGROUPSIZE_X"), NUM_THREADS_PER_GROUP_DIMENSION);
+		OutEnvironment.SetDefine(TEXT("THREADGROUPSIZE_Y"), 1);
+		OutEnvironment.SetDefine(TEXT("THREADGROUPSIZE_Z"), 1);
+	}
+};
+
+// This will tell the engine to create the shader and where the shader entry point is.
+//                            ShaderType                            ShaderPath                                 Shader function name    Type
+IMPLEMENT_GLOBAL_SHADER(FGalaxySimulatorExampleCS, "/TutorialShaders/Private/ComputeShader_SimulatedGalaxy.usf", "SimulateGalaxy", SF_Compute);
+IMPLEMENT_GLOBAL_SHADER(FReduceSumExampleCS, "/TutorialShaders/Private/ComputeShader_ReduceSum.usf", "ReduceSum", SF_Compute);
+
+
+/**********************************************************************************************/
+/* These functions schedule our Compute Shader work from the CPU!							  */
+/**********************************************************************************************/
+
+void FComputeShaderExample::RunComputeShaders_RenderThread(FRDGBuilder& RDGBuilder, const FShaderUsageExampleParameters& InputParameters, FRDGTextureUAVRef OutputTextureUAV, FIntegerSummationWorkSet& ReduceSummationWorkSet)
+{
+	QUICK_SCOPE_CYCLE_COUNTER(STAT_ShaderPlugin_RunComputeShaders); // Used to gather CPU profiling data for Unreal Insights.
 	SCOPED_DRAW_EVENT(RDGBuilder.RHICmdList, ShaderPlugin_Compute); // Used to profile GPU activity and add metadata to be consumed by for example RenderDoc
-	
-	FComputeShaderExampleCS::FParameters* ShaderParams = RDGBuilder.AllocParameters<FComputeShaderExampleCS::FParameters>();
+
+	// Reduce Sum
+	{
+		FScopeLock WriteOutputLock(&ReduceSummationWorkSet.WorkSetLock);
+
+		// Before we send off our new jobs, let's first pick up the output from any previous jobs!
+		ReadbackReduceSum_RenderThread(RDGBuilder, ReduceSummationWorkSet);
+
+		// Now we can send off any new requests.
+		for (auto& [RequestId, ArrayToSum] : InputParameters.IntegerSummationRequests)
+		{
+			DispatchReduceSum_RenderThread(RDGBuilder, ArrayToSum, RequestId, ReduceSummationWorkSet);
+		}
+	}
+
+	// Galaxy Simulation
+	DispatchGalaxySimulation_RenderThread(RDGBuilder, InputParameters, OutputTextureUAV);
+}
+
+void FComputeShaderExample::ReadbackReduceSum_RenderThread(FRDGBuilder& RDGBuilder, FIntegerSummationWorkSet& ReduceSummationWorkSet)
+{
+	QUICK_SCOPE_CYCLE_COUNTER(STAT_ShaderPlugin_ReadbackReduceSum);
+
+	// Here we look through our previous summation requests and finish any that might be ready.
+	for (auto& [RequestId, WorkData] : ReduceSummationWorkSet.ReduceSummationWork)
+	{
+		if (!WorkData.bReadbackComplete && WorkData.Readback.IsReady())
+		{
+			int32* Buffer = (int32*)WorkData.Readback.Lock(WorkData.NrWorkGroups * sizeof(int32));
+			if (!Buffer)
+			{
+				continue;
+			}
+
+			WorkData.Result = 0;
+			for (int32 GroupDataIdx = 0; GroupDataIdx < WorkData.NrWorkGroups; GroupDataIdx++)
+			{
+				WorkData.Result += Buffer[GroupDataIdx];
+			}
+
+			WorkData.Readback.Unlock();
+			WorkData.bReadbackComplete = true;
+		}
+	}
+}
+
+void FComputeShaderExample::DispatchReduceSum_RenderThread(FRDGBuilder& RDGBuilder, const TArray<int32>& ArrayToSum, const int32 RequestId, FIntegerSummationWorkSet& ReduceSummationWorkSet)
+{
+	QUICK_SCOPE_CYCLE_COUNTER(STAT_ShaderPlugin_DispatchReduceSum);
+
+	FIntegerSummationResult& WorkData = ReduceSummationWorkSet.ReduceSummationWork.Add(RequestId);
+	WorkData.NrWorkGroups = FMath::DivideAndRoundUp(ArrayToSum.Num(), NUM_THREADS_PER_GROUP_DIMENSION);
+
+	// In this example shader, we send a larger data set from a CPU side array, run a Compute Shader on it, and then perform a read-back to grab the result.
+	// First we create an RDG buffer with the appropriate size, and then instruct the graph to upload our CPU data to it.
+	FRDGBufferRef IntegerBuffer = RDGBuilder.CreateBuffer(FRDGBufferDesc::CreateStructuredDesc(ArrayToSum.GetTypeSize(), ArrayToSum.Num()), TEXT("IntegerBuffer"));
+	RDGBuilder.QueueBufferUpload(IntegerBuffer, ArrayToSum.GetData(), ArrayToSum.GetTypeSize() * ArrayToSum.Num(), ERDGInitialDataFlags::None);
+
+	FRDGBufferRef OutputBuffer = RDGBuilder.CreateBuffer(FRDGBufferDesc::CreateStructuredDesc(sizeof(int32), WorkData.NrWorkGroups), TEXT("ReductionOutput"));
+
+	FReduceSumExampleCS::FParameters* ShaderParams = RDGBuilder.AllocParameters<FReduceSumExampleCS::FParameters>();
+	ShaderParams->InputBuffer = RDGBuilder.CreateSRV(IntegerBuffer);
+	ShaderParams->OutputBuffer = RDGBuilder.CreateUAV(OutputBuffer);
+	ShaderParams->InputBufferLength = ArrayToSum.Num();
+
+	// Clear the output buffer
+	AddClearUAVPass(RDGBuilder, ShaderParams->OutputBuffer, 0);
+
+	TShaderMapRef<FReduceSumExampleCS> ComputeShader(GetGlobalShaderMap(GMaxRHIFeatureLevel));
+	FIntVector GroupCounts = FIntVector(WorkData.NrWorkGroups, 1, 1);
+	FComputeShaderUtils::AddPass(RDGBuilder, RDG_EVENT_NAME("DispatchReduceSum_RenderThread"), ERDGPassFlags::Compute | ERDGPassFlags::NeverCull, ComputeShader, ShaderParams, GroupCounts);
+
+	// Schedule a pass that will perform the read-back! We need to read one integer for each work group as we will have to sum them to get the final result.
+	FRHIGPUBufferReadback* Readback = &WorkData.Readback;
+	AddReadbackBufferPass(RDGBuilder, RDG_EVENT_NAME("ReadbackReduceSum_RenderThread"), OutputBuffer,
+		[Readback, OutputBuffer](FRHICommandList& RHICmdList)
+		{
+			Readback->EnqueueCopy(RHICmdList, OutputBuffer->GetRHI());
+		});
+}
+
+void FComputeShaderExample::DispatchGalaxySimulation_RenderThread(FRDGBuilder& RDGBuilder, const FShaderUsageExampleParameters& InputParameters, FRDGTextureUAVRef OutputTextureUAV)
+{
+	QUICK_SCOPE_CYCLE_COUNTER(STAT_ShaderPlugin_DispatchGalaxySimulation);
+
+	// This shader shows how you can use a compute shader to write to a texture.
+	// Here we send our inputs using parameters as part of the shader parameter struct. This is an efficient way of sending in simple constants for a shader, but does not work well if you need to send larger amounts of data.
+	FGalaxySimulatorExampleCS::FParameters* ShaderParams = RDGBuilder.AllocParameters<FGalaxySimulatorExampleCS::FParameters>();
 	ShaderParams->OutputTexture = OutputTextureUAV;
-	ShaderParams->TextureSize = FVector2f(DrawParameters.GetRenderTargetSize().X, DrawParameters.GetRenderTargetSize().Y);
-	ShaderParams->SimulationState = DrawParameters.SimulationState;
+	ShaderParams->TextureSize = FVector2f(InputParameters.GetRenderTargetSize().X, InputParameters.GetRenderTargetSize().Y);
+	ShaderParams->SimulationState = InputParameters.SimulationState;
 
-	// @TODO: Upload some simple data to a structured buffer here, so we can show that too.
-
-	TShaderMapRef<FComputeShaderExampleCS> ComputeShader(GetGlobalShaderMap(GMaxRHIFeatureLevel));
-	FIntVector GroupCounts = FIntVector(FMath::DivideAndRoundUp(DrawParameters.GetRenderTargetSize().X, NUM_THREADS_PER_GROUP_DIMENSION), FMath::DivideAndRoundUp(DrawParameters.GetRenderTargetSize().Y, NUM_THREADS_PER_GROUP_DIMENSION), 1);
-	FComputeShaderUtils::AddPass(RDGBuilder, RDG_EVENT_NAME("DemoComputeShader"), ERDGPassFlags::Compute | ERDGPassFlags::NeverCull, ComputeShader, ShaderParams, GroupCounts);
-
-	// If you need to read back data from a compute shader, you can use FComputeUtils::BufferReadback() for that! <3
+	TShaderMapRef<FGalaxySimulatorExampleCS> ComputeShader(GetGlobalShaderMap(GMaxRHIFeatureLevel));
+	FIntVector GroupCounts = FIntVector(FMath::DivideAndRoundUp(InputParameters.GetRenderTargetSize().X, NUM_THREADS_PER_GROUP_DIMENSION), FMath::DivideAndRoundUp(InputParameters.GetRenderTargetSize().Y, NUM_THREADS_PER_GROUP_DIMENSION), 1);
+	FComputeShaderUtils::AddPass(RDGBuilder, RDG_EVENT_NAME("GalaxySimulation"), ERDGPassFlags::Compute | ERDGPassFlags::NeverCull, ComputeShader, ShaderParams, GroupCounts);
 }

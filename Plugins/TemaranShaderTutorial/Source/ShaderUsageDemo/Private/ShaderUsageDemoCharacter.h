@@ -4,8 +4,10 @@
 #pragma once
 
 #include "CoreMinimal.h"
-
 #include "GameFramework/Character.h"
+
+#include "ShaderDeclarationDemoModule.h"
+
 #include "ShaderUsageDemoCharacter.generated.h"
 
 class UInputComponent;
@@ -66,6 +68,9 @@ public:
 	virtual void Tick(float DeltaSeconds) override;
 
 protected:
+	TMap<int32, TArray<int32>> SummationRequests;
+	int32 NextRequestId = 0;
+	int32 SuccessfulReduceSummations = 0;
 	float EndColorBuildup;
 	float EndColorBuildupDirection;
 	float ComputeShaderBlend;
@@ -76,4 +81,7 @@ protected:
 	void LookUpAtRate(float Rate);
 
 	virtual void SetupPlayerInputComponent(UInputComponent* InputComponent) override;
+
+private:
+	void ProcessSummationRequests(FShaderUsageExampleParameters& InputParameters);
 };

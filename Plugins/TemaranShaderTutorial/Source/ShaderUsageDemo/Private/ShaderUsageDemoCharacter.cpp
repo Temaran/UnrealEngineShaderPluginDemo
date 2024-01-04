@@ -3,8 +3,6 @@
 
 #include "ShaderUsageDemoCharacter.h"
 
-#include "ShaderDeclarationDemoModule.h"
-
 #include "Animation/AnimInstance.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
@@ -12,6 +10,8 @@
 #include "GameFramework/InputSettings.h"
 #include "Kismet/GameplayStatics.h"
 #include "Runtime/Engine/Classes/Materials/MaterialInstanceDynamic.h"
+
+#define CHECK_SUMMATION_ON_CPU
 
 AShaderUsageDemoCharacter::AShaderUsageDemoCharacter()
 {
@@ -92,17 +92,79 @@ void AShaderUsageDemoCharacter::Tick(float DeltaSeconds)
 		
 	ComputeShaderBlend = FMath::Clamp(ComputeShaderBlend + ComputeShaderBlendScalar * DeltaSeconds, 0.0f, 1.0f);
 
-	FShaderUsageExampleParameters DrawParameters(RenderTarget);
+	FShaderUsageExampleParameters InputParameters(RenderTarget);
 	{
-		DrawParameters.SimulationState = ComputeShaderSimulationSpeed * TotalTimeSecs;
-		DrawParameters.ComputeShaderBlend = ComputeShaderBlend;
-		DrawParameters.StartColor = StartColor;
-		DrawParameters.EndColor = FColor(EndColorBuildup * 255, 0, 0, 255);
+		InputParameters.SimulationState = ComputeShaderSimulationSpeed * TotalTimeSecs;
+		InputParameters.ComputeShaderBlend = ComputeShaderBlend;
+		InputParameters.StartColor = StartColor;
+		InputParameters.EndColor = FColor(EndColorBuildup * 255, 0, 0, 255);
 	}
+
+	ProcessSummationRequests(InputParameters);
 
 	// If doing this for realsies, you should avoid doing this every frame unless you have to of course.
 	// We set it every frame here since we're updating the end color and simulation state. Boop.
-	FShaderDeclarationDemoModule::Get().UpdateParameters(DrawParameters);
+	FShaderDeclarationDemoModule::Get().UpdateParameters(InputParameters);
+}
+
+void AShaderUsageDemoCharacter::ProcessSummationRequests(FShaderUsageExampleParameters& InputParameters)
+{
+	// Let's check our previous requests.
+	TMap<int32, FIntegerSummationResult> LatestResults;
+	FShaderDeclarationDemoModule::Get().GetCompletedSummationRequests(LatestResults);
+	for (auto& [RequestId, Result] : LatestResults)
+	{
+		check(SummationRequests.Contains(RequestId));
+
+#ifdef CHECK_SUMMATION_ON_CPU
+		// Let's sum this manually on the CPU, and see if it checks out :)
+		TArray<int32> OriginalData = SummationRequests[RequestId];
+		int32 ReduceSum = 0;
+		for (int32 Entry : OriginalData)
+		{
+			ReduceSum += Entry;
+		}
+
+		static uint32 TotalAddedInts = 0;
+		static uint32 CheckCounter = 0;
+		TotalAddedInts += OriginalData.Num();
+		CheckCounter += OriginalData.Num();
+
+		if (ReduceSum == Result.Result)
+		{
+			if (CheckCounter >= 10000)
+			{
+				CheckCounter = 0;
+				UE_LOG(LogTemp, Log, TEXT("New total added int count: %u"), TotalAddedInts);
+			}
+		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("The summation CS isn't working correctly? CPU: %i  GPU: %i"), ReduceSum, Result.Result);
+		}
+#endif
+
+		// We're done with this one!
+		SummationRequests.Remove(RequestId);
+	}
+
+	// Let's make some new summation requests!
+	const int32 NrNewRequests = FMath::RandRange(1, 10);
+	for (int32 RequestIdx = 0; RequestIdx < NrNewRequests; RequestIdx++)
+	{
+		const int32 RequestId = NextRequestId++;
+
+		TArray<int32> IntegersToSum;
+		const int32 RandomNumberOfIntegers = FMath::RandRange(1, 5000);
+		for (int32 IntIdx = 0; IntIdx < RandomNumberOfIntegers; IntIdx++)
+		{
+			IntegersToSum.Add(FMath::RandRange(0, 10000));
+		}
+
+		// Store the request locally so we can refer back to it later, as well as copy them to the input params.
+		SummationRequests.Add(RequestId, IntegersToSum);
+		InputParameters.IntegerSummationRequests.Add(RequestId, MoveTemp(IntegersToSum));
+	}
 }
 
 void AShaderUsageDemoCharacter::OnFire()

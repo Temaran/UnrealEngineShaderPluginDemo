@@ -1,7 +1,7 @@
 // @Author	Fredrik Lindh [Temaran] (temaran@gmail.com) {https://github.com/Temaran}
 ///////////////////////////////////////////////////////////////////////////////////////
 
-#include "PixelShaderExample.h"
+#include "VertexAndPixelShaderExample.h"
 #include "ShaderParameterUtils.h"
 #include "RHIStaticStates.h"
 #include "Shader.h"
@@ -99,9 +99,9 @@ RENDER_TARGET_BINDING_SLOTS()
 END_SHADER_PARAMETER_STRUCT()
 
 // This will tell the engine to create the shader and where the shader entry point is.
-//                           ShaderType                            ShaderPath                Shader function name    Type
-IMPLEMENT_GLOBAL_SHADER(FSimplePassThroughVS, "/TutorialShaders/Private/PixelShader.usf", "MainVertexShader", SF_Vertex);
-IMPLEMENT_GLOBAL_SHADER(FPixelShaderExamplePS, "/TutorialShaders/Private/PixelShader.usf", "MainPixelShader", SF_Pixel);
+//                           ShaderType                            ShaderPath                                           Shader function name    Type
+IMPLEMENT_GLOBAL_SHADER(FSimplePassThroughVS, "/TutorialShaders/Private/VertexAndPixelShader_FullscreenTexturedQuad.usf", "MainVertexShader", SF_Vertex);
+IMPLEMENT_GLOBAL_SHADER(FPixelShaderExamplePS, "/TutorialShaders/Private/VertexAndPixelShader_FullscreenTexturedQuad.usf", "MainPixelShader", SF_Pixel);
 
 void FPixelShaderExample::DrawToRenderTarget_RenderThread(FRDGBuilder& RDGBuilder, const FShaderUsageExampleParameters& DrawParameters, FRDGTextureSRVRef OutputTexture)
 {
@@ -126,7 +126,7 @@ void FPixelShaderExample::DrawToRenderTarget_RenderThread(FRDGBuilder& RDGBuilde
 
 	// If we want to use a vertex shader like this, we have to schedule a custom pass!
 	RDGBuilder.AddPass(
-		RDG_EVENT_NAME("Draw Example"),
+		RDG_EVENT_NAME("FPixelShaderExample"),
 		ShaderParams,
 		ERDGPassFlags::Raster,
 		[ShaderParams, VertexShader, PixelShader](FRHICommandList& RHICmdList)

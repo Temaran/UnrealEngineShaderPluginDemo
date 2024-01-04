@@ -12,7 +12,7 @@ float2 TextureSize;
 float SimulationState;
 
 [numthreads(THREADGROUPSIZE_X, THREADGROUPSIZE_Y, THREADGROUPSIZE_Z)]
-void MainComputeShader(uint3 ThreadId : SV_DispatchThreadID)
+void SimulateGalaxy(uint3 ThreadId : SV_DispatchThreadID)
 {
 	// Set up some variables we are going to need
 	float2 iResolution = float2(TextureSize.x, TextureSize.y);

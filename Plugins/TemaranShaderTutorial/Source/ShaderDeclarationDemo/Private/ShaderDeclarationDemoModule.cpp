@@ -4,7 +4,7 @@
 #include "ShaderDeclarationDemoModule.h"
 
 #include "ComputeShaderExample.h"
-#include "PixelShaderExample.h"
+#include "VertexAndPixelShaderExample.h"
 
 #include "Misc/Paths.h"
 #include "Misc/FileHelper.h"
@@ -25,9 +25,6 @@ DECLARE_GPU_STAT_NAMED(ShaderPlugin_Pixel, TEXT("ShaderPlugin: Render Pixel Shad
 
 void FShaderDeclarationDemoModule::StartupModule()
 {
-	PreRenderHandle.Reset();
-	bCachedParametersValid = false;
-
 	// Maps virtual shader source directory to the plugin's actual shaders directory.
 	FString PluginShaderDir = FPaths::Combine(IPluginManager::Get().FindPlugin(TEXT("TemaranShaderTutorial"))->GetBaseDir(), TEXT("Shaders"));
 	AddShaderSourceDirectoryMapping(TEXT("/TutorialShaders"), PluginShaderDir);
@@ -40,32 +37,59 @@ void FShaderDeclarationDemoModule::ShutdownModule()
 
 void FShaderDeclarationDemoModule::BeginRendering()
 {
-	if (PreRenderHandle.IsValid() || !GEngine)
+	if (!GEngine)
 	{
 		return;
 	}
 
+	{
+		FScopeLock EmptyLock(&ReduceSummationWorkSet.WorkSetLock);
+		ReduceSummationWorkSet.ReduceSummationWork.Empty();
+	}
+
 	bCachedParametersValid = false;
-	PreRenderHandle = GEngine->GetPreRenderDelegateEx().AddRaw(this, &FShaderDeclarationDemoModule::HandlePreRender_RenderThread);
+	if (!GEngine->GetPreRenderDelegateEx().IsBoundToObject(this))
+	{
+		GEngine->GetPreRenderDelegateEx().AddRaw(this, &FShaderDeclarationDemoModule::HandlePreRender_RenderThread);
+	}
 }
 
 void FShaderDeclarationDemoModule::EndRendering()
 {
-	if (!PreRenderHandle.IsValid() || !GEngine)
+	if (!GEngine)
 	{
 		return;
 	}
 
-	GEngine->GetPreRenderDelegateEx().Remove(PreRenderHandle);
-	PreRenderHandle.Reset();
+	GEngine->GetPreRenderDelegateEx().RemoveAll(this);
 }
 
 void FShaderDeclarationDemoModule::UpdateParameters(FShaderUsageExampleParameters& DrawParameters)
 {
-	FScopeLock UpdateLock(&RenderEveryFrameLock);
+	FScopeLock UpdateLock(&InputLock);
 
 	CachedShaderUsageExampleParameters = DrawParameters;
 	bCachedParametersValid = true;
+}
+
+void FShaderDeclarationDemoModule::GetCompletedSummationRequests(TMap<int32, FIntegerSummationResult>& OutNewCompletedResults)
+{
+	FScopeLock CompleteRequestsLock(&ReduceSummationWorkSet.WorkSetLock);
+
+	// Copy to the output map.
+	for (auto& [RequestId, WorkData] : ReduceSummationWorkSet.ReduceSummationWork)
+	{
+		if (WorkData.bReadbackComplete)
+		{
+			OutNewCompletedResults.Add(RequestId, WorkData);
+		}
+	}
+
+	// Remove acquired jobs from the active work set.
+	for (auto& [RequestId, WorkData] : OutNewCompletedResults)
+	{
+		ReduceSummationWorkSet.ReduceSummationWork.Remove(RequestId);
+	}
 }
 
 void FShaderDeclarationDemoModule::HandlePreRender_RenderThread(FRDGBuilder& RDGBuilder)
@@ -78,12 +102,11 @@ void FShaderDeclarationDemoModule::HandlePreRender_RenderThread(FRDGBuilder& RDG
 	}
 
 	// Depending on your data, you might not have to lock here, just added this code to show how you can do it if you have to.
-	RenderEveryFrameLock.Lock();
-	FShaderUsageExampleParameters DrawParameters = CachedShaderUsageExampleParameters;
-	RenderEveryFrameLock.Unlock();
-
-	// Let's draw our effects!
-	if (!DrawParameters.RenderTarget)
+	InputLock.Lock();
+	FShaderUsageExampleParameters InputParameters = CachedShaderUsageExampleParameters;
+	InputLock.Unlock();
+	
+	if (!InputParameters.RenderTarget)
 	{
 		return;
 	}
@@ -92,9 +115,9 @@ void FShaderDeclarationDemoModule::HandlePreRender_RenderThread(FRDGBuilder& RDG
 	SCOPED_DRAW_EVENT(RDGBuilder.RHICmdList, ShaderPlugin_Render); // Used to profile GPU activity and add metadata to be consumed by for example RenderDoc
 
 	// The graph will help us figure out when the GPU memory is needed, and only have it allocated from then, so this makes memory management a lot easier and nicer!
-	FRDGTextureDesc ComputeShaderOutputDesc = FRDGTextureDesc::Create2D(DrawParameters.GetRenderTargetSize(), EPixelFormat::PF_R32_UINT, FClearValueBinding::None, ETextureCreateFlags::RenderTargetable | ETextureCreateFlags::UAV | ETextureCreateFlags::ShaderResource);
+	FRDGTextureDesc ComputeShaderOutputDesc = FRDGTextureDesc::Create2D(InputParameters.GetRenderTargetSize(), EPixelFormat::PF_R32_UINT, FClearValueBinding::None, ETextureCreateFlags::RenderTargetable | ETextureCreateFlags::UAV | ETextureCreateFlags::ShaderResource);
 	FRDGTextureRef OutputTexture = RDGBuilder.CreateTexture(ComputeShaderOutputDesc, TEXT("ShaderPlugin_ComputeShaderOutput"), ERDGTextureFlags::None);
 
-	FComputeShaderExample::RunComputeShader_RenderThread(RDGBuilder, DrawParameters, RDGBuilder.CreateUAV(OutputTexture));
-	FPixelShaderExample::DrawToRenderTarget_RenderThread(RDGBuilder, DrawParameters, RDGBuilder.CreateSRV(OutputTexture));
+	FComputeShaderExample::RunComputeShaders_RenderThread(RDGBuilder, InputParameters, RDGBuilder.CreateUAV(OutputTexture), ReduceSummationWorkSet);
+	FPixelShaderExample::DrawToRenderTarget_RenderThread(RDGBuilder, InputParameters, RDGBuilder.CreateSRV(OutputTexture));
 }
