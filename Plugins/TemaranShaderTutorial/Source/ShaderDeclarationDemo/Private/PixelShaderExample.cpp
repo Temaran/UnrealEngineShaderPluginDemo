@@ -22,7 +22,7 @@ class FSimpleScreenVertexBuffer : public FVertexBuffer
 {
 public:
 	/** Initialize the RHI for this rendering resource */
-	virtual void InitRHI(FRHICommandListBase& RHICmdList) override
+	virtual void InitRHI() override
 	{
 		TResourceArray<FFilterVertex, VERTEXBUFFER_ALIGNMENT> Vertices;
 		Vertices.SetNumUninitialized(6);
@@ -41,7 +41,7 @@ public:
 
 		// Create vertex buffer. Fill buffer with initial data upon creation
 		FRHIResourceCreateInfo CreateInfo(TEXT("ShaderDemoSquare"), &Vertices);
-		VertexBufferRHI = RHICmdList.CreateVertexBuffer(Vertices.GetResourceDataSize(), BUF_Static, CreateInfo);
+		VertexBufferRHI = RHICreateIndexBuffer(sizeof(FFilterVertex), Vertices.GetResourceDataSize(), BUF_Static, CreateInfo);
 	}
 };
 TGlobalResource<FSimpleScreenVertexBuffer> GSimpleScreenVertexBuffer;
