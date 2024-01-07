@@ -11,7 +11,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "Runtime/Engine/Classes/Materials/MaterialInstanceDynamic.h"
 
-#define CHECK_SUMMATION_ON_CPU
+static TAutoConsoleVariable<int32> CVarDemoPerformCPUCheck(TEXT("demo.PerformCPUCheck"), 0, TEXT("If this is set to 1, we will perform CPU side checking of our GPU output to help verify there are no errors."), ECVF_Default);
 
 AShaderUsageDemoCharacter::AShaderUsageDemoCharacter()
 {
@@ -116,54 +116,59 @@ void AShaderUsageDemoCharacter::ProcessSummationRequests(FShaderUsageExamplePara
 	{
 		check(SummationRequests.Contains(RequestId));
 
-#ifdef CHECK_SUMMATION_ON_CPU
-		// Let's sum this manually on the CPU, and see if it checks out :)
-		TArray<int32> OriginalData = SummationRequests[RequestId];
-		int32 ReduceSum = 0;
-		for (int32 Entry : OriginalData)
+		if (CVarDemoPerformCPUCheck.GetValueOnGameThread())
 		{
-			ReduceSum += Entry;
-		}
-
-		static uint32 TotalAddedInts = 0;
-		static uint32 CheckCounter = 0;
-		TotalAddedInts += OriginalData.Num();
-		CheckCounter += OriginalData.Num();
-
-		if (ReduceSum == Result.Result)
-		{
-			if (CheckCounter >= 10000)
+			// Let's sum this manually on the CPU, and see if it checks out :)
+			TArray<int32> OriginalData = SummationRequests[RequestId];
+			int32 ReduceSum = 0;
+			for (int32 Entry : OriginalData)
 			{
-				CheckCounter = 0;
-				UE_LOG(LogTemp, Log, TEXT("New total added int count: %u"), TotalAddedInts);
+				ReduceSum += Entry;
+			}
+
+			static uint32 TotalAddedInts = 0;
+			static uint32 CheckCounter = 0;
+			TotalAddedInts += OriginalData.Num();
+			CheckCounter += OriginalData.Num();
+
+			if (ReduceSum == Result.Result)
+			{
+				if (CheckCounter >= 10000)
+				{
+					CheckCounter = 0;
+					UE_LOG(LogTemp, Log, TEXT("New total added int count: %u"), TotalAddedInts);
+				}
+			}
+			else
+			{
+				UE_LOG(LogTemp, Error, TEXT("The summation CS isn't working correctly? CPU: %i  GPU: %i"), ReduceSum, Result.Result);
 			}
 		}
-		else
-		{
-			UE_LOG(LogTemp, Error, TEXT("The summation CS isn't working correctly? CPU: %i  GPU: %i"), ReduceSum, Result.Result);
-		}
-#endif
 
 		// We're done with this one!
 		SummationRequests.Remove(RequestId);
 	}
 
-	// Let's make some new summation requests!
-	const int32 NrNewRequests = FMath::RandRange(1, 10);
-	for (int32 RequestIdx = 0; RequestIdx < NrNewRequests; RequestIdx++)
+	// If we have shaders that only work in certain shader models we can avoid using them by checking our supported feature level.
+	if (GetWorld() && GetWorld()->Scene && GetWorld()->Scene->GetFeatureLevel() >= ERHIFeatureLevel::SM6)
 	{
-		const int32 RequestId = NextRequestId++;
-
-		TArray<int32> IntegersToSum;
-		const int32 RandomNumberOfIntegers = FMath::RandRange(1, 5000);
-		for (int32 IntIdx = 0; IntIdx < RandomNumberOfIntegers; IntIdx++)
+		// Let's make some new summation requests!
+		const int32 NrNewRequests = FMath::RandRange(1, 10);
+		for (int32 RequestIdx = 0; RequestIdx < NrNewRequests; RequestIdx++)
 		{
-			IntegersToSum.Add(FMath::RandRange(0, 10000));
-		}
+			const int32 RequestId = NextRequestId++;
 
-		// Store the request locally so we can refer back to it later, as well as copy them to the input params.
-		SummationRequests.Add(RequestId, IntegersToSum);
-		InputParameters.IntegerSummationRequests.Add(RequestId, MoveTemp(IntegersToSum));
+			TArray<int32> IntegersToSum;
+			const int32 RandomNumberOfIntegers = FMath::RandRange(1, 5000);
+			for (int32 IntIdx = 0; IntIdx < RandomNumberOfIntegers; IntIdx++)
+			{
+				IntegersToSum.Add(FMath::RandRange(0, 10000));
+			}
+
+			// Store the request locally so we can refer back to it later, as well as copy them to the input params.
+			SummationRequests.Add(RequestId, IntegersToSum);
+			InputParameters.IntegerSummationRequests.Add(RequestId, MoveTemp(IntegersToSum));
+		}
 	}
 }
 

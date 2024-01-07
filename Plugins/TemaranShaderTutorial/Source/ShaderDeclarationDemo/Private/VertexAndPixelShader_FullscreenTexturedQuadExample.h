@@ -9,7 +9,7 @@
 /**************************************************************************************/
 /* This is just an interface we use to keep all the pixel shading code in one file.   */
 /**************************************************************************************/
-class FPixelShaderExample
+class FVertexAndPixelShader_FullscreenTexturedQuadExample
 {
 public:
 	static void DrawToRenderTarget_RenderThread(FRDGBuilder& RDGBuilder, const FShaderUsageExampleParameters& DrawParameters, FRDGTextureSRVRef OutputTexture);

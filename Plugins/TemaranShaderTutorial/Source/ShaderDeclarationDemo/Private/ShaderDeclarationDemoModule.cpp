@@ -3,8 +3,9 @@
 
 #include "ShaderDeclarationDemoModule.h"
 
-#include "ComputeShaderExample.h"
-#include "VertexAndPixelShaderExample.h"
+#include "ComputeShader_DataUploadAndReadbackExample.h"
+#include "ComputeShader_DrawTextureExample.h"
+#include "VertexAndPixelShader_FullscreenTexturedQuadExample.h"
 
 #include "Misc/Paths.h"
 #include "Misc/FileHelper.h"
@@ -114,10 +115,12 @@ void FShaderDeclarationDemoModule::HandlePreRender_RenderThread(FRDGBuilder& RDG
 	QUICK_SCOPE_CYCLE_COUNTER(STAT_ShaderPlugin_Render); // Used to gather CPU profiling data for Unreal Insights! Insights is a really powerful tool for debugging CPU stats, memory and networking.
 	SCOPED_DRAW_EVENT(RDGBuilder.RHICmdList, ShaderPlugin_Render); // Used to profile GPU activity and add metadata to be consumed by for example RenderDoc
 
+	FComputeShader_DataUploadAndReadbackExample::ReduceSum(RDGBuilder, InputParameters, ReduceSummationWorkSet);
+
 	// The graph will help us figure out when the GPU memory is needed, and only have it allocated from then, so this makes memory management a lot easier and nicer!
 	FRDGTextureDesc ComputeShaderOutputDesc = FRDGTextureDesc::Create2D(InputParameters.GetRenderTargetSize(), EPixelFormat::PF_R32_UINT, FClearValueBinding::None, ETextureCreateFlags::RenderTargetable | ETextureCreateFlags::UAV | ETextureCreateFlags::ShaderResource);
 	FRDGTextureRef OutputTexture = RDGBuilder.CreateTexture(ComputeShaderOutputDesc, TEXT("ShaderPlugin_ComputeShaderOutput"), ERDGTextureFlags::None);
 
-	FComputeShaderExample::RunComputeShaders_RenderThread(RDGBuilder, InputParameters, RDGBuilder.CreateUAV(OutputTexture), ReduceSummationWorkSet);
-	FPixelShaderExample::DrawToRenderTarget_RenderThread(RDGBuilder, InputParameters, RDGBuilder.CreateSRV(OutputTexture));
+	FComputeShader_DrawTextureExample::DispatchGalaxySimulation_RenderThread(RDGBuilder, InputParameters, RDGBuilder.CreateUAV(OutputTexture));
+	FVertexAndPixelShader_FullscreenTexturedQuadExample::DrawToRenderTarget_RenderThread(RDGBuilder, InputParameters, RDGBuilder.CreateSRV(OutputTexture));
 }

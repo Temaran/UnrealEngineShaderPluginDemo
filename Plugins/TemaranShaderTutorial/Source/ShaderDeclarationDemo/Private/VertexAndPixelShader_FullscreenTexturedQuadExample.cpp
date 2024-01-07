@@ -1,7 +1,7 @@
 // @Author	Fredrik Lindh [Temaran] (temaran@gmail.com) {https://github.com/Temaran}
 ///////////////////////////////////////////////////////////////////////////////////////
 
-#include "VertexAndPixelShaderExample.h"
+#include "VertexAndPixelShader_FullscreenTexturedQuadExample.h"
 #include "ShaderParameterUtils.h"
 #include "RHIStaticStates.h"
 #include "Shader.h"
@@ -103,7 +103,7 @@ END_SHADER_PARAMETER_STRUCT()
 IMPLEMENT_GLOBAL_SHADER(FSimplePassThroughVS, "/TutorialShaders/Private/VertexAndPixelShader_FullscreenTexturedQuad.usf", "MainVertexShader", SF_Vertex);
 IMPLEMENT_GLOBAL_SHADER(FPixelShaderExamplePS, "/TutorialShaders/Private/VertexAndPixelShader_FullscreenTexturedQuad.usf", "MainPixelShader", SF_Pixel);
 
-void FPixelShaderExample::DrawToRenderTarget_RenderThread(FRDGBuilder& RDGBuilder, const FShaderUsageExampleParameters& DrawParameters, FRDGTextureSRVRef OutputTexture)
+void FVertexAndPixelShader_FullscreenTexturedQuadExample::DrawToRenderTarget_RenderThread(FRDGBuilder& RDGBuilder, const FShaderUsageExampleParameters& DrawParameters, FRDGTextureSRVRef OutputTexture)
 {
 	QUICK_SCOPE_CYCLE_COUNTER(STAT_ShaderPlugin_PixelShader); // Used to gather CPU profiling data for the UE4 session frontend
 	SCOPED_DRAW_EVENT(RDGBuilder.RHICmdList, ShaderPlugin_Pixel); // Used to profile GPU activity and add metadata to be consumed by for example RenderDoc
