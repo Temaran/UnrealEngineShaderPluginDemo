@@ -18,7 +18,7 @@ There has also been several contributions and fixes to earlier branches however,
 This project is a tutorial project for how to create shaders in UE5. There are branches for some major versions, but not all. If you are working on an older version of the engine, please try and find the branch that best fits your needs! 
 
 Most material effects can be created in-editor using the excellent tools that Epic has provided us with. There are some times though, where you simply want to work directly with the graphics API, or UE5's excellent RHI abstraction. This plugin attempts to help you get to that point as quickly as possible.
-It is worth to note that this is not a tutorial on how to program shaders in general, or how to write HLSL, but rather how to get shaders working in UE5. For learning how to program shaders or HLSL, I recommend other resources,
+It is worth noting that this is not a tutorial on how to program shaders in general, or how to write HLSL, but rather how to get shaders working in UE5. For learning how to program shaders or HLSL, I recommend other resources,
 such as MSDN: https://msdn.microsoft.com/en-us/library/bb509561(v=VS.85).aspx or instructional books for more advanced users such as "GPU Pro" by Wolfgang Engel. If you want to learn more about graphics in general, there are also excellent books on that subject. I like to recommend "Real-Time Rendering" from CRC.
 
 ------
